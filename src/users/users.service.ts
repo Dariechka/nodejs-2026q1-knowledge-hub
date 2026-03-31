@@ -1,11 +1,25 @@
 import { Injectable } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdatePasswordDto } from './dto/update-password.dto';
+import type { UsersStorage } from './users.storage';
+import { randomUUID } from 'node:crypto';
+import type { User } from './entities/user.entity';
 
 @Injectable()
 export class UsersService {
+  constructor(private readonly usersStorage: UsersStorage) {}
+
   create(createUserDto: CreateUserDto) {
-    return 'This action adds a new user';
+    const timestamp = Date.now();
+    const user: User = {
+      ...createUserDto,
+      role: createUserDto.role ?? 'viewer',
+      id: randomUUID().toString(),
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    };
+    this.usersStorage.create(user);
+    return { user, password: undefined };
   }
 
   findAll() {
@@ -16,7 +30,7 @@ export class UsersService {
     return `This action returns a #${id} user`;
   }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
+  update(id: number, updatePasswordDto: UpdatePasswordDto) {
     return `This action updates a #${id} user`;
   }
 
