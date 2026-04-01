@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdatePasswordDto } from './dto/update-password.dto';
 import { randomUUID } from 'node:crypto';
@@ -34,8 +38,17 @@ export class UsersService {
     return this.usersStorage.findOne(id);
   }
 
-  update(id: number, updatePasswordDto: UpdatePasswordDto) {
-    return `This action updates a #${id} user`;
+  update(id: string, updatePasswordDto: UpdatePasswordDto) {
+    const user = this.usersStorage.findOne(id);
+
+    if (!user) {
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
+    if (user.password !== updatePasswordDto.oldPassword) {
+      throw new ForbiddenException('Old password is incorrect');
+    }
+
+    return this.usersStorage.update(id, updatePasswordDto);
   }
 
   remove(id: string) {

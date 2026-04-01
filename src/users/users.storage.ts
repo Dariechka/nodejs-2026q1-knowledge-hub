@@ -18,8 +18,11 @@ export class UsersStorage {
     return this.store.get(id);
   }
 
-  update(id: number, updatePasswordDto: UpdatePasswordDto) {
-    return `This action updates a #${id} user`;
+  update(id: string, updatePasswordDto: UpdatePasswordDto) {
+    const user: User = this.store.get(id);
+    user.password = updatePasswordDto.newPassword;
+    user.updatedAt = Date.now();
+    return user;
   }
 
   remove(id: string) {
