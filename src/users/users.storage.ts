@@ -22,7 +22,11 @@ export class UsersStorage {
     return `This action updates a #${id} user`;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} user`;
+  remove(id: string) {
+    const user = this.store.get(id);
+    if (user) {
+      this.store.delete(id);
+    }
+    return user;
   }
 }

@@ -38,7 +38,11 @@ export class UsersService {
     return `This action updates a #${id} user`;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} user`;
+  remove(id: string) {
+    const wasDeleted = this.usersStorage.remove(id);
+    if (!wasDeleted) {
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
+    return wasDeleted;
   }
 }
