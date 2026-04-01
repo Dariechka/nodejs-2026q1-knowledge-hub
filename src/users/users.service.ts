@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdatePasswordDto } from './dto/update-password.dto';
-import type { UsersStorage } from './users.storage';
 import { randomUUID } from 'node:crypto';
 import type { User } from './entities/user.entity';
+import { UsersStorage } from './users.storage';
 
 @Injectable()
 export class UsersService {
@@ -23,7 +23,7 @@ export class UsersService {
   }
 
   findAll() {
-    return `This action returns all users`;
+    return this.usersStorage.findAll();
   }
 
   findOne(id: number) {

@@ -11,7 +11,7 @@ export class UsersStorage {
   }
 
   findAll() {
-    return `This action returns all users`;
+    return Array.from(this.store.values());
   }
 
   findOne(id: number) {
