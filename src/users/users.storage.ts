@@ -14,8 +14,8 @@ export class UsersStorage {
     return Array.from(this.store.values());
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} user`;
+  findOne(id: string) {
+    return this.store.get(id);
   }
 
   update(id: number, updatePasswordDto: UpdatePasswordDto) {
