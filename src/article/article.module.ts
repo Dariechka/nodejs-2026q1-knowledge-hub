@@ -6,6 +6,6 @@ import { ArticleStorage } from './article.storage';
 @Module({
   controllers: [ArticleController],
   providers: [ArticleService, ArticleStorage],
-  exports: [ArticleService],
+  exports: [ArticleService, ArticleStorage],
 })
 export class ArticleModule {}

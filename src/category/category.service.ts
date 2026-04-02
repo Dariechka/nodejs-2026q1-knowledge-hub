@@ -33,7 +33,7 @@ export class CategoryService {
     const existingCategory = this.categoryStorage.findOne(id);
 
     if (!existingCategory) {
-      throw new NotFoundException(`Article with ID ${id} not found`);
+      throw new NotFoundException(`Category with ID ${id} not found`);
     }
 
     const category: Category = {
@@ -47,7 +47,7 @@ export class CategoryService {
   remove(id: string) {
     const wasDeleted = this.categoryStorage.remove(id);
     if (!wasDeleted) {
-      throw new NotFoundException(`Article with ID ${id} not found`);
+      throw new NotFoundException(`Category with ID ${id} not found`);
     }
     return wasDeleted;
   }

@@ -15,6 +15,9 @@ export class ArticleStorage {
   }
 
   findOne(id: string) {
+    console.log('==============');
+    console.log(id);
+    console.log(Array.from(this.store.keys()));
     return this.store.get(id);
   }
 
