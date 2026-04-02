@@ -1,13 +1,17 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { GetArticlesFilterDto } from './dto/get-articles-filter';
-import { ArticleStorage } from './article.storage';
+import { ArticleStorage } from '../shared/article.storage';
 import type { Article } from './entities/article.entity';
 import { ArticleDto } from './dto/article-dto';
+import { CommentStorage } from '../shared/comment.storage';
 
 @Injectable()
 export class ArticleService {
-  constructor(private readonly articleStorage: ArticleStorage) {}
+  constructor(
+    private readonly articleStorage: ArticleStorage,
+    private readonly commentStorage: CommentStorage,
+  ) {}
 
   create(articleDto: ArticleDto) {
     const timestamp = Date.now();
@@ -65,6 +69,7 @@ export class ArticleService {
     }
 
     const article: Article = {
+      ...existingArticle,
       ...articleDto,
       updatedAt: Date.now(),
 
@@ -79,6 +84,7 @@ export class ArticleService {
     if (!wasDeleted) {
       throw new NotFoundException(`Article with ID ${id} not found`);
     }
+    this.commentStorage.removeByArticleId(id);
     return wasDeleted;
   }
 }

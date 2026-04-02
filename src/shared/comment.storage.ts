@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { Comment } from './entities/comment.entity';
+import type { Comment } from '../comment/entities/comment.entity';
 
 @Injectable()
 export class CommentStorage {
@@ -24,5 +24,19 @@ export class CommentStorage {
       this.store.delete(id);
     }
     return comment;
+  }
+
+  removeByArticleId(articleId: string) {
+    for (const comment of this.store.values()) {
+      if (comment.articleId === articleId) {
+        this.store.delete(comment.id);
+      }
+    }
+  }
+
+  removeByUserId(userId: string) {
+    [...this.store.values()]
+      .filter((comment) => comment.authorId === userId)
+      .forEach((comment) => this.store.delete(comment.id));
   }
 }

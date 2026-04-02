@@ -7,11 +7,17 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdatePasswordDto } from './dto/update-password.dto';
 import { randomUUID } from 'node:crypto';
 import type { User } from './entities/user.entity';
-import { UsersStorage } from './users.storage';
+import { UsersStorage } from '../shared/users.storage';
+import { CommentStorage } from '../shared/comment.storage';
+import { ArticleStorage } from '../shared/article.storage';
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly usersStorage: UsersStorage) {}
+  constructor(
+    private readonly usersStorage: UsersStorage,
+    private readonly articleStorage: ArticleStorage,
+    private readonly commentStorage: CommentStorage,
+  ) {}
 
   create(createUserDto: CreateUserDto) {
     const timestamp = Date.now();
@@ -23,7 +29,7 @@ export class UsersService {
       updatedAt: timestamp,
     };
     this.usersStorage.create(user);
-    return { user, password: undefined };
+    return { ...user, password: undefined };
   }
 
   findAll() {
@@ -48,7 +54,10 @@ export class UsersService {
       throw new ForbiddenException('Old password is incorrect');
     }
 
-    return this.usersStorage.update(id, updatePasswordDto);
+    return {
+      ...this.usersStorage.update(id, updatePasswordDto),
+      password: undefined,
+    };
   }
 
   remove(id: string) {
@@ -56,6 +65,8 @@ export class UsersService {
     if (!wasDeleted) {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
+    this.commentStorage.removeByUserId(id);
+    this.articleStorage.removeAuthor(id);
     return wasDeleted;
   }
 }

@@ -16,8 +16,9 @@ export class ArticleDto {
   @IsNotEmpty()
   content: string;
 
+  @IsOptional()
   @IsIn(['draft', 'published', 'archived'])
-  status: 'draft' | 'published' | 'archived';
+  status?: 'draft' | 'published' | 'archived';
 
   @IsOptional()
   @IsUUID('4')
@@ -27,7 +28,8 @@ export class ArticleDto {
   @IsUUID('4')
   categoryId: string | null;
 
+  @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  tags: string[];
+  tags?: string[];
 }

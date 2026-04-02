@@ -1,12 +1,16 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { CategoryStorage } from './category.storage';
+import { CategoryStorage } from '../shared/category.storage';
 import { randomUUID } from 'node:crypto';
 import type { Category } from './entities/category.entity';
 import { CategoryDto } from './dto/category.dto';
+import { ArticleStorage } from '../shared/article.storage';
 
 @Injectable()
 export class CategoryService {
-  constructor(private readonly categoryStorage: CategoryStorage) {}
+  constructor(
+    private readonly categoryStorage: CategoryStorage,
+    private readonly articleStorage: ArticleStorage,
+  ) {}
 
   create(categoryDto: CategoryDto) {
     const category: Category = {
@@ -49,6 +53,7 @@ export class CategoryService {
     if (!wasDeleted) {
       throw new NotFoundException(`Category with ID ${id} not found`);
     }
+    this.articleStorage.removeCategory(id);
     return wasDeleted;
   }
 }

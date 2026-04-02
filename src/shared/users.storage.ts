@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { UpdatePasswordDto } from './dto/update-password.dto';
-import type { User } from './entities/user.entity';
+import { UpdatePasswordDto } from '../users/dto/update-password.dto';
+import type { User } from '../users/entities/user.entity';
 
 @Injectable()
 export class UsersStorage {
@@ -26,10 +26,6 @@ export class UsersStorage {
   }
 
   remove(id: string) {
-    const user = this.store.get(id);
-    if (user) {
-      this.store.delete(id);
-    }
-    return user;
+    return this.store.delete(id);
   }
 }

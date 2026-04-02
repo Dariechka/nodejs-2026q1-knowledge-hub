@@ -4,10 +4,10 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
-import { CommentStorage } from './comment.storage';
+import { CommentStorage } from '../shared/comment.storage';
 import type { Comment } from './entities/comment.entity';
 import { CommentDto } from './dto/comment.dto';
-import { ArticleStorage } from '../article/article.storage';
+import { ArticleStorage } from '../shared/article.storage';
 
 @Injectable()
 export class CommentService {
@@ -17,7 +17,6 @@ export class CommentService {
   ) {}
 
   create(commentDto: CommentDto) {
-    console.log(commentDto.articleId);
     const article = this.articlesStorage.findOne(commentDto.articleId);
     if (!article) {
       throw new UnprocessableEntityException(

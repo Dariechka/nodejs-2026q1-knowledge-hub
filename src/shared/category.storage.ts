@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { Category } from './entities/category.entity';
+import type { Category } from '../category/entities/category.entity';
 
 @Injectable()
 export class CategoryStorage {
@@ -19,10 +19,6 @@ export class CategoryStorage {
   }
 
   remove(id: string) {
-    const category = this.store.get(id);
-    if (category) {
-      this.store.delete(id);
-    }
-    return category;
+    return this.store.delete(id);
   }
 }
