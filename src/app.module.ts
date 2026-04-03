@@ -8,7 +8,13 @@ import { CommentModule } from './comment/comment.module';
 import { SharedModule } from './shared/shared.module';
 
 @Module({
-  imports: [UsersModule, ArticleModule, CategoryModule, CommentModule, SharedModule],
+  imports: [
+    UsersModule,
+    ArticleModule,
+    CategoryModule,
+    CommentModule,
+    SharedModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
