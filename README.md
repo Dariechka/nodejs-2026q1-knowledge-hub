@@ -1,70 +1,100 @@
-# Knowledge Hub
+# Nest.js Knowledge Hub API
 
-## Prerequisites
+This project is a REST API built with **NestJS** as part of the RS School Node.js assignment.
 
-- Git - [Download & Install Git](https://git-scm.com/downloads).
-- Node.js - [Download & Install Node.js](https://nodejs.org/en/download/) and the npm package manager.
+It implements full CRUD functionality for core entities such as **Users, Articles, Categories, and Comments**, includes **OpenAPI (Swagger) documentation**, and is covered with **end-to-end tests**.
 
-## Downloading
+---
 
-```
-git clone {repository URL}
-```
+## Features
 
-## Installing NPM modules
+* RESTful API with proper HTTP methods and status codes
+* CRUD operations for:
 
-```
+    * Users
+    * Articles
+    * Categories
+    * Comments
+* Request validation using `class-validator`
+* UUID-based entities
+* Swagger (OpenAPI) documentation
+* Filtering (articles & comments)
+* Entity relationships:
+
+    * User → Articles / Comments
+    * Article → Comments
+    * Category → Articles
+* Cascade behavior:
+
+    * Deleting user → removes comments & unlinks articles
+    * Deleting article → removes comments
+    * Deleting category → unlinks articles
+* Comprehensive e2e tests + additional custom tests
+
+---
+
+## Tech Stack
+
+* **Node.js**
+* **NestJS**
+* **TypeScript**
+* **Jest** (testing)
+* **Swagger** (`@nestjs/swagger`)
+* **class-validator**
+
+---
+
+## Installation
+
+```bash
+git clone <your-repo-url>
+cd <project-folder>
 npm install
 ```
 
-## Running application
+---
+
+## Running the App
+
+```bash
+# development
+npm run start:dev
+
+# production build
+npm run build
+npm run start:prod
+```
+
+---
+
+## API Documentation
+
+Swagger documentation is available at:
 
 ```
-npm start
+http://localhost:4000/doc
 ```
 
-After starting the app on port (4000 as default) you can open
-in your browser OpenAPI documentation by typing http://localhost:4000/doc/.
-For more information about OpenAPI/Swagger please visit https://swagger.io/.
+It provides:
+
+* Endpoint descriptions
+* Request/response schemas
+* Ability to test endpoints directly
+
+---
 
 ## Testing
 
-After application running open new terminal and enter:
+Run all tests:
 
-To run all tests without authorization
-
-```
+```bash
 npm run test
 ```
 
-To run only one of all test suites
+My personal preferring:
 
-```
-npm run test -- <path to suite>
-```
-
-To run all test with authorization
-
-```
-npm run test:auth
-```
-
-To run only specific test suite with authorization
-
-```
-npm run test:auth -- <path to suite>
-```
-
-To run refresh token tests
-
-```
-npm run test:refresh
-```
-
-To run RBAC (role-based access control) tests
-
-```
-npm run test:rbac
+```bash
+jest --testMatch "<rootDir>/(articles|comments|categories|users|my-user-tests|my-article-tests|my-category-tests|my-comment-tests).e2e.spec.ts" --noStackTrace --runInBand
 ```
 
 ### Auto-fix and format
@@ -77,8 +107,76 @@ npm run lint
 npm run format
 ```
 
-### Debugging in VSCode
+---
 
-Press <kbd>F5</kbd> to debug.
+## API Overview
 
-For more information, visit: https://code.visualstudio.com/docs/editor/debugging
+### Users
+
+* `POST /user` – create user
+* `GET /user` – get all users
+* `GET /user/:id` – get user by ID
+* `PUT /user/:id` – update password
+* `DELETE /user/:id` – delete user
+
+---
+
+### Articles
+
+* `POST /article` – create article
+* `GET /article` – get all articles
+* `GET /article?status=published&tag=nodejs` - get all articles with filters
+* `GET /article/:id` – get article by ID
+* `PUT /article/:id` – update article
+* `DELETE /article/:id` – delete article
+
+---
+
+### Categories
+
+* `POST /category` – create category
+* `GET /category` – get all categories
+* `GET /category/:id` – get category by ID
+* `PUT /category/:id` – update category
+* `DELETE /category/:id` – delete category
+
+---
+
+### Comments
+
+* `POST /comment` – create comment
+* `GET /comment={articleId}` – get comments by articleId
+* `GET /comment/:id` – get comment by ID
+* `DELETE /comment/:id` – delete comment
+
+---
+
+## Relationships & Behavior
+
+* **User deletion**
+
+    * `article.authorId → null`
+    * user comments → deleted
+
+* **Article deletion**
+
+    * all related comments → deleted
+
+* **Category deletion**
+
+    * `article.categoryId → null`
+
+---
+
+## Notes
+
+* All IDs are UUID v4
+* Returns **200 OK** on successful request
+* Returns **201 Created** when a resource is successfully created
+* Returns **204 No Content** when a resource is successfully deleted
+* Validation errors return **400 Bad Request**
+* Non-existing resources return **404 Not Found**
+* Returns **403 Forbidden** if the old password is incorrect
+* Business logic violations return **422 Unprocessable Entity**
+
+---
