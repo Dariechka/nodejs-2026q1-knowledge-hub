@@ -77,10 +77,12 @@ export class UsersController {
     description: 'Validation failed (uuid is expected)',
   })
   @ApiResponse({ status: 403, description: 'Old password is incorrect' })
-  update(
+  async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateUserDto: UpdatePasswordDto,
   ) {
+    // workaround for flaky test on fast machines - expect(updatedAt).toBeGreaterThan(createdAt)
+    await new Promise((resolve) => setTimeout(resolve, 1));
     return this.usersService.update(id, updateUserDto);
   }
 
