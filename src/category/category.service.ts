@@ -4,6 +4,8 @@ import { randomUUID } from 'node:crypto';
 import type { Category } from './entities/category.entity';
 import { CategoryDto } from './dto/category.dto';
 import { ArticleStorage } from '../shared/article.storage';
+import { Pagination } from '../shared/dto/pagination';
+import { Sorting } from '../shared/dto/sorting';
 
 @Injectable()
 export class CategoryService {
@@ -21,8 +23,8 @@ export class CategoryService {
     return category;
   }
 
-  findAll() {
-    return this.categoryStorage.findAll();
+  findAll(pagination: Pagination, sorting: Sorting) {
+    return this.categoryStorage.findAll(pagination, sorting);
   }
 
   findOne(id: string) {

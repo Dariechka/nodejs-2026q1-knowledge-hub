@@ -1,10 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
-import { GetArticlesFilterDto } from './dto/get-articles-filter';
 import { ArticleStorage } from '../shared/article.storage';
 import type { Article } from './entities/article.entity';
 import { ArticleDto } from './dto/article-dto';
 import { CommentStorage } from '../shared/comment.storage';
+import { Pagination } from '../shared/dto/pagination';
+import { Sorting } from '../shared/dto/sorting';
+import { SearchArticleDto } from '../users/dto/article-search.dto';
 
 @Injectable()
 export class ArticleService {
@@ -30,27 +32,12 @@ export class ArticleService {
     return article;
   }
 
-  findAll(filterDto: GetArticlesFilterDto) {
-    const { status, categoryId, tag } = filterDto;
-    let articles = this.articleStorage.findAll();
-    if (Object.keys(filterDto).length > 0) {
-      articles = articles.filter((article) => {
-        let isMatch = true;
-
-        if (status && article.status !== status) {
-          isMatch = false;
-        }
-        if (categoryId && article.categoryId !== categoryId) {
-          isMatch = false;
-        }
-        if (tag && !article.tags.includes(tag)) {
-          isMatch = false;
-        }
-
-        return isMatch;
-      });
-    }
-    return articles;
+  findAll(
+    filterDto: SearchArticleDto,
+    pagination: Pagination,
+    sorting: Sorting,
+  ) {
+    return this.articleStorage.findAll(filterDto, pagination, sorting);
   }
 
   findOne(id: string) {

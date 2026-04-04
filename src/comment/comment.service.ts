@@ -8,6 +8,9 @@ import { CommentStorage } from '../shared/comment.storage';
 import type { Comment } from './entities/comment.entity';
 import { CommentDto } from './dto/comment.dto';
 import { ArticleStorage } from '../shared/article.storage';
+import { Pagination } from '../shared/dto/pagination';
+import { Sorting } from '../shared/dto/sorting';
+import { GetCommentFilterDto } from './dto/get-comment-filter';
 
 @Injectable()
 export class CommentService {
@@ -33,10 +36,12 @@ export class CommentService {
     return comment;
   }
 
-  findByArticleId(articleId: string) {
-    return this.commentStorage
-      .findAll()
-      .filter((comment) => comment.articleId === articleId);
+  findByArticleId(
+    articleId: GetCommentFilterDto,
+    pagination: Pagination,
+    sorting: Sorting,
+  ) {
+    return this.commentStorage.findByArticleId(articleId, pagination, sorting);
   }
 
   findOne(id: string) {

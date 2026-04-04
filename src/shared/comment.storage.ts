@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import type { Comment } from '../comment/entities/comment.entity';
+import { Pagination } from './dto/pagination';
+import { Sorting } from './dto/sorting';
+import { GetCommentFilterDto } from '../comment/dto/get-comment-filter';
+import { paginate, sort } from './utils';
 
 @Injectable()
 export class CommentStorage {
@@ -10,8 +14,15 @@ export class CommentStorage {
     return comment;
   }
 
-  findAll() {
-    return Array.from(this.store.values());
+  findByArticleId(
+    articleId: GetCommentFilterDto,
+    pagination: Pagination,
+    sorting: Sorting,
+  ) {
+    const value = Array.from(this.store.values()).filter(
+      (comment) => comment.articleId === articleId.articleId,
+    );
+    return paginate(sort(value, sorting), pagination);
   }
 
   findOne(id: string) {

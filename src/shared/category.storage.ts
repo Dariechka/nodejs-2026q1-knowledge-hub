@@ -1,5 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import type { Category } from '../category/entities/category.entity';
+import { Pagination } from './dto/pagination';
+import { Sorting } from './dto/sorting';
+import { paginate, sort } from './utils';
 
 @Injectable()
 export class CategoryStorage {
@@ -10,8 +13,9 @@ export class CategoryStorage {
     return category;
   }
 
-  findAll() {
-    return Array.from(this.store.values());
+  findAll(pagination: Pagination, sorting: Sorting) {
+    const values = Array.from(this.store.values());
+    return paginate(sort(values, sorting), pagination);
   }
 
   findOne(id: string) {

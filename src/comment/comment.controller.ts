@@ -11,7 +11,6 @@ import {
 } from '@nestjs/common';
 import { CommentService } from './comment.service';
 import { CommentDto } from './dto/comment.dto';
-import { GetCommentFilterDto } from './dto/get-comment-filter';
 import {
   ApiBody,
   ApiOperation,
@@ -20,6 +19,7 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { SearchCommentDto } from '../users/dto/comment-search.dto';
 
 @ApiTags('comment')
 @Controller('comment')
@@ -51,8 +51,8 @@ export class CommentController {
     required: true,
     description: 'Article ID to filter comments',
   })
-  findAll(@Query() filterDto: GetCommentFilterDto) {
-    return this.commentService.findByArticleId(filterDto.articleId);
+  findAll(@Query() query: SearchCommentDto) {
+    return this.commentService.findByArticleId(query, query, query);
   }
 
   @Get(':id')

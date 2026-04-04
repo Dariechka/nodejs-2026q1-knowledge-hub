@@ -8,6 +8,7 @@ import {
   ParseUUIDPipe,
   Post,
   Put,
+  Query,
 } from '@nestjs/common';
 import { CategoryService } from './category.service';
 import { CategoryDto } from './dto/category.dto';
@@ -18,6 +19,7 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { SearchDto } from '../users/dto/search.dto';
 
 @ApiTags('category')
 @Controller('category')
@@ -39,8 +41,8 @@ export class CategoryController {
   @Get()
   @ApiOperation({ summary: 'Get all category' })
   @ApiResponse({ status: 200, description: 'List of categories' })
-  findAll() {
-    return this.categoryService.findAll();
+  findAll(@Query() query: SearchDto) {
+    return this.categoryService.findAll(query, query);
   }
 
   @Get(':id')

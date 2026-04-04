@@ -11,7 +11,6 @@ import {
   Query,
 } from '@nestjs/common';
 import { ArticleService } from './article.service';
-import { GetArticlesFilterDto } from './dto/get-articles-filter';
 import { ArticleDto } from './dto/article-dto';
 import {
   ApiBody,
@@ -21,6 +20,7 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { SearchArticleDto } from '../users/dto/article-search.dto';
 
 @ApiTags('article')
 @Controller('article')
@@ -49,8 +49,8 @@ export class ArticleController {
   })
   @ApiQuery({ name: 'categoryId', required: false, type: String })
   @ApiQuery({ name: 'tag', required: false, type: String })
-  findAll(@Query() filterDto: GetArticlesFilterDto) {
-    return this.articleService.findAll(filterDto);
+  findAll(@Query() query: SearchArticleDto) {
+    return this.articleService.findAll(query, query, query);
   }
 
   @Get(':id')
