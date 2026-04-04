@@ -1,13 +1,14 @@
 import {
-  Controller,
-  Get,
-  Post,
   Body,
-  Param,
+  Controller,
   Delete,
-  Put,
-  ParseUUIDPipe,
+  Get,
   HttpCode,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Put,
+  Query,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -19,6 +20,7 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { SearchDto } from './dto/search.dto';
 
 @ApiTags('user')
 @Controller('user')
@@ -40,8 +42,8 @@ export class UsersController {
   @Get()
   @ApiOperation({ summary: 'Get all users' })
   @ApiResponse({ status: 200, description: 'List of users' })
-  findAll() {
-    return this.usersService.findAll();
+  findAll(@Query() query: SearchDto) {
+    return this.usersService.findAll(query, query);
   }
 
   @Get(':id')

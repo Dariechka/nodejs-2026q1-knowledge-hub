@@ -10,6 +10,8 @@ import type { User } from './entities/user.entity';
 import { UsersStorage } from '../shared/users.storage';
 import { CommentStorage } from '../shared/comment.storage';
 import { ArticleStorage } from '../shared/article.storage';
+import { Pagination } from '../shared/dto/pagination';
+import { Sorting } from '../shared/dto/sorting';
 
 @Injectable()
 export class UsersService {
@@ -32,8 +34,8 @@ export class UsersService {
     return { ...user, password: undefined };
   }
 
-  findAll() {
-    return this.usersStorage.findAll();
+  findAll(pagination: Pagination, sorting: Sorting) {
+    return this.usersStorage.findAll(pagination, sorting);
   }
 
   findOne(id: string) {

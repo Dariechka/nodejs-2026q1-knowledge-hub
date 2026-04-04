@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { UpdatePasswordDto } from '../users/dto/update-password.dto';
 import type { User } from '../users/entities/user.entity';
+import { Pagination } from './dto/pagination';
+import { Sorting } from './dto/sorting';
+import { paginate, sort } from './utils';
 
 @Injectable()
 export class UsersStorage {
@@ -10,8 +13,9 @@ export class UsersStorage {
     this.store.set(user.id, user);
   }
 
-  findAll() {
-    return Array.from(this.store.values());
+  findAll(pagination: Pagination, sorting: Sorting) {
+    const values = Array.from(this.store.values());
+    return paginate(sort(values, sorting), pagination);
   }
 
   findOne(id: string) {
