@@ -4,6 +4,7 @@ import { ArticleModule } from './article/article.module';
 import { CategoryModule } from './category/category.module';
 import { CommentModule } from './comment/comment.module';
 import { SharedModule } from './shared/shared.module';
+import { PrismaModule } from '../prisma/prisma.module';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { SharedModule } from './shared/shared.module';
     CategoryModule,
     CommentModule,
     SharedModule,
+    PrismaModule,
   ],
 })
 export class AppModule {}
