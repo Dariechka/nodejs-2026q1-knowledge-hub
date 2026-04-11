@@ -6,6 +6,12 @@ COPY . /app/
 
 RUN npm ci
 RUN npm run build
+RUN cp -R ./node_modules/.prisma ./.prisma
+
+RUN npm uninstall prisma
+RUN rm -rf ./node_modules
+RUN npm ci --omit=dev
+RUN cp -R ./.prisma ./node_modules/.prisma
 
 FROM node:24-alpine AS production
 
@@ -14,10 +20,9 @@ RUN chown -R 1000:1000 /app
 USER 1000:1000
 
 COPY --chown=1000:1000 package.json package-lock.json /app/
-RUN npm ci --omit=dev
 
 COPY --chown=1000:1000 --from=builder /app/dist/src /app
-COPY --chown=1000:1000 --from=builder /app/node_modules/.prisma /app/node_modules/.prisma
+COPY --chown=1000:1000 --from=builder /app/node_modules /app/node_modules
 
 EXPOSE 4000
 
