@@ -16,7 +16,8 @@ USER 1000:1000
 COPY --chown=1000:1000 package.json package-lock.json /app/
 RUN npm ci --omit=dev
 
-COPY --chown=1000:1000 --from=builder /app/dist /app
+COPY --chown=1000:1000 --from=builder /app/dist/src /app
+COPY --chown=1000:1000 --from=builder /app/node_modules/.prisma /app/node_modules/.prisma
 
 EXPOSE 4000
 

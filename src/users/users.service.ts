@@ -12,6 +12,8 @@ import { CommentStorage } from '../shared/comment.storage';
 import { ArticleStorage } from '../shared/article.storage';
 import { Pagination } from '../shared/dto/pagination';
 import { Sorting } from '../shared/dto/sorting';
+import { PrismaService } from '../prisma/prisma.service';
+import { toPrismaPagination, toPrismaSorting } from '../shared/utils';
 
 @Injectable()
 export class UsersService {
@@ -19,6 +21,7 @@ export class UsersService {
     private readonly usersStorage: UsersStorage,
     private readonly articleStorage: ArticleStorage,
     private readonly commentStorage: CommentStorage,
+    private readonly prismaService: PrismaService,
   ) {}
 
   create(createUserDto: CreateUserDto) {
@@ -34,8 +37,11 @@ export class UsersService {
     return { ...user, password: undefined };
   }
 
-  findAll(pagination: Pagination, sorting: Sorting) {
-    return this.usersStorage.findAll(pagination, sorting);
+  async findAll(pagination: Pagination, sorting: Sorting) {
+    return this.prismaService.user.findMany({
+      ...toPrismaPagination(pagination),
+      ...toPrismaSorting(sorting),
+    });
   }
 
   findOne(id: string) {
