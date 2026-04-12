@@ -11,7 +11,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { ArticleService } from './article.service';
-import { ArticleDto } from './dto/article-dto';
+import { CreateUpdateArticleDto } from './dto/create-update-article-dto';
 import {
   ApiBody,
   ApiOperation,
@@ -29,13 +29,13 @@ export class ArticleController {
 
   @Post()
   @ApiOperation({ summary: 'Create article' })
-  @ApiBody({ type: ArticleDto })
+  @ApiBody({ type: CreateUpdateArticleDto })
   @ApiResponse({ status: 201, description: 'Article created' })
   @ApiResponse({
     status: 400,
     description: 'Required fields should not be empty',
   })
-  create(@Body() articleDto: ArticleDto) {
+  create(@Body() articleDto: CreateUpdateArticleDto) {
     return this.articleService.create(articleDto);
   }
 
@@ -78,7 +78,7 @@ export class ArticleController {
     format: 'uuid',
     description: 'Article ID',
   })
-  @ApiBody({ type: ArticleDto })
+  @ApiBody({ type: CreateUpdateArticleDto })
   @ApiResponse({ status: 200, description: 'Article updated' })
   @ApiResponse({ status: 404, description: 'Article with ID not found' })
   @ApiResponse({
@@ -87,7 +87,7 @@ export class ArticleController {
   })
   update(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() articleDto: ArticleDto,
+    @Body() articleDto: CreateUpdateArticleDto,
   ) {
     return this.articleService.update(id, articleDto);
   }

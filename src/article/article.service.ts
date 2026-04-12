@@ -1,29 +1,35 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { ArticleDto } from './dto/article-dto';
+import { CreateUpdateArticleDto } from './dto/create-update-article-dto';
 import { Pagination } from '../shared/dto/pagination';
 import { Sorting } from '../shared/dto/sorting';
 import { PrismaService } from '../prisma/prisma.service';
 import { toPrismaPagination, toPrismaSorting } from '../shared/utils';
 import { GetArticlesFilterDto } from './dto/get-articles-filter';
-import { ArticleStatus } from '@prisma/client';
+import { ArticleDto } from './dto/article-dto';
 
 @Injectable()
 export class ArticleService {
   constructor(private readonly prismaService: PrismaService) {}
 
-  async create(articleDto: ArticleDto) {
-    return this.prismaService.article.create({
+  async create(articleDto: CreateUpdateArticleDto): Promise<ArticleDto> {
+    const { authorId, categoryId, tags, ...data } = articleDto;
+    const article = await this.prismaService.article.create({
+      include: { tags: { select: { name: true } } },
       data: {
-        ...articleDto,
-        authorId: articleDto.authorId ?? null,
-        categoryId: articleDto.categoryId ?? null,
+        ...data,
+        author: authorId ? { connect: { id: authorId } } : undefined,
+        category: categoryId ? { connect: { id: categoryId } } : undefined,
         tags: {
-          connectOrCreate: (articleDto.tags ?? []).map((tag) => ({
+          connectOrCreate: (tags ?? []).map((tag) => ({
             where: { name: tag },
             create: { name: tag },
           })),
         },
       },
+    });
+    return new ArticleDto({
+      ...article,
+      tags: article.tags.map((tag) => tag.name),
     });
   }
 
@@ -34,12 +40,16 @@ export class ArticleService {
   ) {
     return this.prismaService.article.findMany({
       where: {
-        status: filter.status as ArticleStatus,
-        categoryId: filter.categoryId,
-        authorId: filter.authorId,
-        tags: {
-          some: { name: filter.tag },
-        },
+        OR: [
+          { status: filter.status },
+          { categoryId: filter.categoryId },
+          { authorId: filter.authorId },
+          {
+            tags: {
+              some: { name: filter.tag },
+            },
+          },
+        ],
       },
       ...toPrismaPagination(pagination),
       ...toPrismaSorting(sorting),
@@ -49,24 +59,33 @@ export class ArticleService {
   async findOne(id: string) {
     const article = await this.prismaService.article.findUnique({
       where: { id },
+      include: { tags: { select: { name: true } } },
     });
     if (!article) {
       throw new NotFoundException(`Article with ID ${id} not found`);
     }
-    return article;
+    return {
+      ...article,
+      tags: article.tags.map((tag) => tag.name),
+    };
   }
 
-  async update(id: string, articleDto: ArticleDto) {
+  async update(id: string, articleDto: CreateUpdateArticleDto) {
     try {
       const { authorId, categoryId, tags, ...data } = articleDto;
-      return this.prismaService.article.update({
+      return await this.prismaService.article.update({
         where: { id },
         data: {
           ...data,
           author: authorId ? { connect: { id: authorId } } : undefined,
           category: categoryId ? { connect: { id: categoryId } } : undefined,
           tags: tags
-            ? { connect: tags.map((tag) => ({ name: tag })) }
+            ? {
+                connectOrCreate: tags.map((tag) => ({
+                  where: { name: tag },
+                  create: { name: tag },
+                })),
+              }
             : undefined,
         },
       });
