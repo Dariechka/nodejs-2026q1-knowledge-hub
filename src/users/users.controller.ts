@@ -102,7 +102,7 @@ export class UsersController {
     status: 400,
     description: 'Validation failed (uuid is expected)',
   })
-  remove(@Param('id', ParseUUIDPipe) id: string) {
-    this.usersService.remove(id);
+  async remove(@Param('id', ParseUUIDPipe) id: string) {
+    await this.usersService.remove(id);
   }
 }

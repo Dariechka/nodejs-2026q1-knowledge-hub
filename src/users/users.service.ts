@@ -12,67 +12,65 @@ import { Pagination } from '../shared/dto/pagination';
 import { Sorting } from '../shared/dto/sorting';
 import { PrismaService } from '../prisma/prisma.service';
 import { toPrismaPagination, toPrismaSorting } from '../shared/utils';
-import { Role } from '@prisma/client';
+import { UserDto } from './dto/user.dto';
 
 @Injectable()
 export class UsersService {
-  constructor(
-    private readonly usersStorage: UsersStorage,
-    private readonly articleStorage: ArticleStorage,
-    private readonly commentStorage: CommentStorage,
-    private readonly prismaService: PrismaService,
-  ) {}
+  constructor(private readonly prismaService: PrismaService) {}
 
-  create(createUserDto: CreateUserDto) {
-    const user = this.prismaService.user.create({
-      data: {
-        ...createUserDto,
-        role: createUserDto.role ?? Role.viewer,
-      },
+  async create(createUserDto: CreateUserDto): Promise<UserDto> {
+    const user = await this.prismaService.user.create({
+      data: createUserDto,
     });
-    return { ...user, password: undefined };
+    return new UserDto(user);
   }
 
-  async findAll(pagination: Pagination, sorting: Sorting) {
-    return this.prismaService.user.findMany({
-      ...toPrismaPagination(pagination),
-      ...toPrismaSorting(sorting),
-    });
+  async findAll(pagination: Pagination, sorting: Sorting): Promise<UserDto[]> {
+    return (
+      await this.prismaService.user.findMany({
+        ...toPrismaPagination(pagination),
+        ...toPrismaSorting(sorting),
+      })
+    ).map((user) => new UserDto(user));
   }
 
-  findOne(id: string) {
-    const user = this.prismaService.user.findUnique({
+  async findOne(id: string): Promise<UserDto> {
+    const user = await this.prismaService.user.findUnique({
       where: { id },
     });
     if (!user) {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
-    return user;
+    return new UserDto(user);
   }
 
-  update(id: string, updatePasswordDto: UpdatePasswordDto) {
-    const user = this.usersStorage.findOne(id);
-
+  async update(
+    id: string,
+    updatePasswordDto: UpdatePasswordDto,
+  ): Promise<UserDto> {
+    const user = await this.prismaService.user.findUnique({
+      where: { id },
+    });
     if (!user) {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
+
     if (user.password !== updatePasswordDto.oldPassword) {
       throw new ForbiddenException('Old password is incorrect');
     }
 
-    return {
-      ...this.usersStorage.update(id, updatePasswordDto),
-      password: undefined,
-    };
+    const newUser = await this.prismaService.user.update({
+      where: { id },
+      data: { password: updatePasswordDto.newPassword },
+    });
+    return new UserDto(newUser);
   }
 
-  remove(id: string) {
-    const wasDeleted = this.usersStorage.remove(id);
-    if (!wasDeleted) {
+  async remove(id: string) {
+    try {
+      await this.prismaService.user.delete({ where: { id } });
+    } catch {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
-    this.commentStorage.removeByUserId(id);
-    this.articleStorage.removeAuthor(id);
-    return wasDeleted;
   }
 }
