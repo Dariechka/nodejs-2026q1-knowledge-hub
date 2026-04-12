@@ -19,6 +19,14 @@ export class GetArticlesFilterDto {
   categoryId?: string;
 
   @ApiPropertyOptional({
+    example: 'b3bb189e-8bf9-3888-9912-ace4e6543003',
+    nullable: true,
+  })
+  @IsOptional()
+  @IsString()
+  authorId?: string;
+
+  @ApiPropertyOptional({
     example: 'nestjs',
   })
   @IsOptional()

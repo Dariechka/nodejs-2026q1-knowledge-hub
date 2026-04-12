@@ -5,9 +5,6 @@ import {
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdatePasswordDto } from './dto/update-password.dto';
-import { UsersStorage } from '../shared/users.storage';
-import { CommentStorage } from '../shared/comment.storage';
-import { ArticleStorage } from '../shared/article.storage';
 import { Pagination } from '../shared/dto/pagination';
 import { Sorting } from '../shared/dto/sorting';
 import { PrismaService } from '../prisma/prisma.service';
