@@ -44,7 +44,7 @@ CREATE TABLE "Comment" (
     "id" UUID NOT NULL,
     "content" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "authorId" UUID NOT NULL,
+    "authorId" UUID,
     "articleId" UUID NOT NULL,
 
     CONSTRAINT "Comment_pkey" PRIMARY KEY ("id")

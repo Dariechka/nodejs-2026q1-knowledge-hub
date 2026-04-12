@@ -3,18 +3,19 @@ import {
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
-import { CommentDto } from './dto/comment.dto';
+import { CreateCommentDto } from './dto/create-comment.dto';
 import { Pagination } from '../shared/dto/pagination';
 import { Sorting } from '../shared/dto/sorting';
 import { GetCommentFilterDto } from './dto/get-comment-filter';
 import { PrismaService } from '../prisma/prisma.service';
 import { toPrismaPagination, toPrismaSorting } from '../shared/utils';
+import { CommentDto } from './dto/comment.dto';
 
 @Injectable()
 export class CommentService {
   constructor(private readonly prismaService: PrismaService) {}
 
-  async create(commentDto: CommentDto) {
+  async create(commentDto: CreateCommentDto): Promise<CommentDto> {
     const article = await this.prismaService.article.findUnique({
       where: { id: commentDto.articleId },
     });
@@ -23,9 +24,16 @@ export class CommentService {
         `Cannot create comment: Article ${commentDto.articleId} does not exist`,
       );
     }
-    return this.prismaService.comment.create({
-      data: commentDto,
+
+    const { authorId, articleId, ...data } = commentDto;
+    const newComment = await this.prismaService.comment.create({
+      data: {
+        ...data,
+        author: authorId ? { connect: { id: authorId } } : undefined,
+        article: articleId ? { connect: { id: articleId } } : undefined,
+      },
     });
+    return new CommentDto(newComment);
   }
 
   async findByArticleId(
