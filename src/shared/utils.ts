@@ -28,3 +28,32 @@ export const paginate = <T>(
   const limit = pagination.limit;
   return items.slice(page * limit, page * limit + limit);
 };
+
+export const toPrismaPagination = (
+  pagination: Pagination,
+): { skip?: number; take?: number } => {
+  if (pagination.page === undefined || pagination.limit === undefined) {
+    return {};
+  }
+  const page = pagination.page;
+  const limit = pagination.limit;
+  return {
+    skip: page * limit,
+    take: limit,
+  };
+};
+
+export const toPrismaSorting = (
+  sorting: Sorting,
+): { orderBy?: { [key: string]: 'asc' | 'desc' } } => {
+  if (sorting.sortBy === undefined || sorting.order === undefined) {
+    return {};
+  }
+  const sortBy = sorting.sortBy;
+  const order = sorting.order;
+  return {
+    orderBy: {
+      [sortBy]: order,
+    },
+  };
+};

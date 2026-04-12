@@ -10,7 +10,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { CommentService } from './comment.service';
-import { CommentDto } from './dto/comment.dto';
+import { CreateCommentDto } from './dto/create-comment.dto';
 import {
   ApiBody,
   ApiOperation,
@@ -28,7 +28,7 @@ export class CommentController {
 
   @Post()
   @ApiOperation({ summary: 'Create comment' })
-  @ApiBody({ type: CommentDto })
+  @ApiBody({ type: CreateCommentDto })
   @ApiResponse({ status: 201, description: 'Comment created successfully' })
   @ApiResponse({
     status: 400,
@@ -38,7 +38,7 @@ export class CommentController {
     status: 422,
     description: 'Cannot create comment: Article with articleId does not exist',
   })
-  create(@Body() commentDto: CommentDto) {
+  create(@Body() commentDto: CreateCommentDto) {
     return this.commentService.create(commentDto);
   }
 

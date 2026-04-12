@@ -8,7 +8,7 @@ export class GetArticlesFilterDto {
   })
   @IsOptional()
   @IsIn(['draft', 'published', 'archived'])
-  status?: string;
+  status?: 'draft' | 'published' | 'archived';
 
   @ApiPropertyOptional({
     example: 'b3bb189e-8bf9-3888-9912-ace4e6543003',
@@ -17,6 +17,14 @@ export class GetArticlesFilterDto {
   @IsOptional()
   @IsString()
   categoryId?: string;
+
+  @ApiPropertyOptional({
+    example: 'b3bb189e-8bf9-3888-9912-ace4e6543003',
+    nullable: true,
+  })
+  @IsOptional()
+  @IsString()
+  authorId?: string;
 
   @ApiPropertyOptional({
     example: 'nestjs',

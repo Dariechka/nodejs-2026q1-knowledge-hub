@@ -1,61 +1,53 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { CategoryStorage } from '../shared/category.storage';
-import { randomUUID } from 'node:crypto';
-import type { Category } from './entities/category.entity';
 import { CategoryDto } from './dto/category.dto';
-import { ArticleStorage } from '../shared/article.storage';
 import { Pagination } from '../shared/dto/pagination';
 import { Sorting } from '../shared/dto/sorting';
+import { PrismaService } from '../prisma/prisma.service';
+import { toPrismaPagination, toPrismaSorting } from '../shared/utils';
 
 @Injectable()
 export class CategoryService {
-  constructor(
-    private readonly categoryStorage: CategoryStorage,
-    private readonly articleStorage: ArticleStorage,
-  ) {}
+  constructor(private readonly prismaService: PrismaService) {}
 
-  create(categoryDto: CategoryDto) {
-    const category: Category = {
-      ...categoryDto,
-      id: randomUUID().toString(),
-    };
-    this.categoryStorage.save(category);
-    return category;
+  async create(categoryDto: CategoryDto) {
+    return this.prismaService.category.create({
+      data: categoryDto,
+    });
   }
 
-  findAll(pagination: Pagination, sorting: Sorting) {
-    return this.categoryStorage.findAll(pagination, sorting);
+  async findAll(pagination: Pagination, sorting: Sorting) {
+    return this.prismaService.category.findMany({
+      ...toPrismaPagination(pagination),
+      ...toPrismaSorting(sorting),
+    });
   }
 
-  findOne(id: string) {
-    const category: Category | undefined = this.categoryStorage.findOne(id);
+  async findOne(id: string) {
+    const category = await this.prismaService.category.findUnique({
+      where: { id },
+    });
     if (!category) {
       throw new NotFoundException(`Category with ID ${id} not found`);
     }
     return category;
   }
 
-  update(id: string, categoryDto: CategoryDto) {
-    const existingCategory = this.categoryStorage.findOne(id);
-
-    if (!existingCategory) {
+  async update(id: string, categoryDto: CategoryDto) {
+    try {
+      return await this.prismaService.category.update({
+        where: { id },
+        data: categoryDto,
+      });
+    } catch {
       throw new NotFoundException(`Category with ID ${id} not found`);
     }
-
-    const category: Category = {
-      ...categoryDto,
-      id,
-    };
-
-    return this.categoryStorage.save(category);
   }
 
-  remove(id: string) {
-    const wasDeleted = this.categoryStorage.remove(id);
-    if (!wasDeleted) {
+  async remove(id: string) {
+    try {
+      await this.prismaService.category.delete({ where: { id } });
+    } catch {
       throw new NotFoundException(`Category with ID ${id} not found`);
     }
-    this.articleStorage.removeCategory(id);
-    return wasDeleted;
   }
 }
