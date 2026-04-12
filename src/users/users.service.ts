@@ -5,8 +5,6 @@ import {
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdatePasswordDto } from './dto/update-password.dto';
-import { randomUUID } from 'node:crypto';
-import type { User } from './entities/user.entity';
 import { UsersStorage } from '../shared/users.storage';
 import { CommentStorage } from '../shared/comment.storage';
 import { ArticleStorage } from '../shared/article.storage';
@@ -14,6 +12,7 @@ import { Pagination } from '../shared/dto/pagination';
 import { Sorting } from '../shared/dto/sorting';
 import { PrismaService } from '../prisma/prisma.service';
 import { toPrismaPagination, toPrismaSorting } from '../shared/utils';
+import { Role } from '@prisma/client';
 
 @Injectable()
 export class UsersService {
@@ -25,15 +24,12 @@ export class UsersService {
   ) {}
 
   create(createUserDto: CreateUserDto) {
-    const timestamp = Date.now();
-    const user: User = {
-      ...createUserDto,
-      role: createUserDto.role ?? 'viewer',
-      id: randomUUID().toString(),
-      createdAt: timestamp,
-      updatedAt: timestamp,
-    };
-    this.usersStorage.create(user);
+    const user = this.prismaService.user.create({
+      data: {
+        ...createUserDto,
+        role: createUserDto.role ?? Role.viewer,
+      },
+    });
     return { ...user, password: undefined };
   }
 
@@ -45,7 +41,9 @@ export class UsersService {
   }
 
   findOne(id: string) {
-    const user: User | undefined = this.usersStorage.findOne(id);
+    const user = this.prismaService.user.findUnique({
+      where: { id },
+    });
     if (!user) {
       throw new NotFoundException(`User with ID ${id} not found`);
     }

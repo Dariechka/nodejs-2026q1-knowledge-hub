@@ -18,7 +18,7 @@ async function main() {
     data: {
       login: 'admin',
       password: 'admin123',
-      role: Role.ADMIN,
+      role: Role.admin,
     },
   });
 
@@ -26,7 +26,7 @@ async function main() {
     data: {
       login: 'viewer',
       password: 'viewer456',
-      role: Role.VIEWER,
+      role: Role.viewer,
     },
   });
 
@@ -34,7 +34,7 @@ async function main() {
     data: {
       login: 'editor',
       password: 'editor789',
-      role: Role.EDITOR,
+      role: Role.editor,
     },
   });
 
@@ -70,7 +70,7 @@ async function main() {
     data: {
       title: 'ACS Catalysis',
       content: 'ACS Catalysis focuses on experimental and theoretical studies',
-      status: ArticleStatus.PUBLISHED,
+      status: ArticleStatus.published,
       authorId: admin.id,
       categoryId: inorganic.id,
       tags: {
@@ -83,7 +83,7 @@ async function main() {
     data: {
       title: 'Spectroscopy',
       content: 'Spectroscopy—Principle, types, and applications',
-      status: ArticleStatus.ARCHIVED,
+      status: ArticleStatus.archived,
       authorId: editor.id,
       categoryId: analytical.id,
       tags: {
@@ -97,7 +97,7 @@ async function main() {
       title: 'Chromatography',
       content:
         'Current research approaches in downstream processing of pharmaceutically relevant proteins',
-      status: ArticleStatus.PUBLISHED,
+      status: ArticleStatus.published,
       authorId: admin.id,
       categoryId: analytical.id,
       tags: {
@@ -110,7 +110,7 @@ async function main() {
     data: {
       title: 'Synthesis',
       content: 'Total Synthesis of Triplinone F',
-      status: ArticleStatus.DRAFT,
+      status: ArticleStatus.draft,
       authorId: admin.id,
       categoryId: organic.id,
       tags: {
@@ -124,7 +124,7 @@ async function main() {
       title: 'Biomolecule',
       content:
         'A CRISPR Technology and Biomolecule Production by Synthetic Biology Approach',
-      status: ArticleStatus.DRAFT,
+      status: ArticleStatus.draft,
       authorId: viewer.id,
       categoryId: organic.id,
       tags: {
