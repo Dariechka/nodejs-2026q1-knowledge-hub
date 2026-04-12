@@ -34,7 +34,7 @@ export class CategoryService {
 
   async update(id: string, categoryDto: CategoryDto) {
     try {
-      return this.prismaService.category.update({
+      return await this.prismaService.category.update({
         where: { id },
         data: categoryDto,
       });
