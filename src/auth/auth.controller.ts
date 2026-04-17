@@ -2,7 +2,7 @@ import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Body, Controller, HttpCode, Post } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthDto } from './dto/auth.dto';
-import type { RefreshDto } from './dto/refresh.dto';
+import { RefreshDto } from './dto/refresh.dto';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -41,23 +41,12 @@ export class AuthController {
 
   @Post('refresh')
   @ApiOperation({ summary: 'Refresh' })
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        refreshToken: {
-          type: 'string',
-          example: 'your-refresh-token-here',
-        },
-      },
-      required: ['refreshToken'],
-    },
-  })
+  @ApiBody({ type: RefreshDto })
   @ApiResponse({ status: 200, description: 'Successfully refresh' })
   @HttpCode(200)
   @ApiResponse({
-    status: 400,
-    description: 'Required fields should not be empty',
+    status: 401,
+    description: 'No refresh token in body',
   })
   @ApiResponse({
     status: 403,
