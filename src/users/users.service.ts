@@ -41,6 +41,16 @@ export class UsersService {
     return new UserDto(user);
   }
 
+  async findByLogin(login: string): Promise<UserDto> {
+    const user = await this.prismaService.user.findUnique({
+      where: { login },
+    });
+    if (!user) {
+      throw new NotFoundException(`User with login ${login} not found`);
+    }
+    return new UserDto(user);
+  }
+
   async update(
     id: string,
     updatePasswordDto: UpdatePasswordDto,
