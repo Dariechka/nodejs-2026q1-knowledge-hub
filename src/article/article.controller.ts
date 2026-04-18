@@ -9,6 +9,7 @@ import {
   Post,
   Put,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { ArticleService } from './article.service';
 import { CreateUpdateArticleDto } from './dto/create-update-article-dto';
@@ -21,6 +22,9 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { SearchArticleDto } from '../users/dto/article-search.dto';
+import { JwtAuthGuard } from '../auth/guard/jwt.guard';
+import { CurrentUser } from '../auth/decorator/current-user.decorator';
+import type { CurrentUserData } from '../auth/data/current-user.data';
 
 @ApiTags('article')
 @Controller('article')
@@ -40,6 +44,7 @@ export class ArticleController {
   }
 
   @Get()
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Get all articles with filters' })
   @ApiResponse({ status: 200, description: 'List of articles' })
   @ApiQuery({
@@ -71,6 +76,7 @@ export class ArticleController {
   }
 
   @Put(':id')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Update article by ID' })
   @ApiParam({
     name: 'id',
@@ -86,6 +92,7 @@ export class ArticleController {
     description: 'Validation failed (uuid is expected)',
   })
   update(
+    @CurrentUser() user: CurrentUserData,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() articleDto: CreateUpdateArticleDto,
   ) {
