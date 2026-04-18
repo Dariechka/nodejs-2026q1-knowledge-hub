@@ -3,6 +3,7 @@ import { Body, Controller, HttpCode, Post } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthDto } from './dto/auth.dto';
 import { RefreshDto } from './dto/refresh.dto';
+import type { UserDto } from '../users/dto/user.dto';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -18,7 +19,7 @@ export class AuthController {
     status: 400,
     description: 'Required fields should not be empty',
   })
-  signup(@Body() dto: AuthDto) {
+  signup(@Body() dto: AuthDto): Promise<UserDto> {
     return this.authService.signup(dto);
   }
 

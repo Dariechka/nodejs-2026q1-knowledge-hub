@@ -11,6 +11,8 @@ import type { JwtPayload } from './entities/auth.entity';
 import * as bcrypt from 'bcrypt';
 import { UsersService } from '../users/users.service';
 import type { StringValue } from 'ms';
+import type { User } from '@prisma/client';
+import type { UserDto } from '../users/dto/user.dto';
 
 @Injectable()
 export class AuthService {
@@ -19,20 +21,18 @@ export class AuthService {
     private readonly jwt: JwtService,
   ) {}
 
-  async signup(authDto: AuthDto) {
+  async signup(authDto: AuthDto): Promise<UserDto> {
     const hash = await bcrypt.hash(
       authDto.password,
       Number(process.env.CRYPT_SALT),
     );
 
     try {
-      await this.userService.create({
+      return await this.userService.create({
         login: authDto.login,
         password: hash,
         role: 'viewer',
       });
-
-      return { message: 'Successfully signed up' };
     } catch {
       throw new BadRequestException('Login already taken');
     }
@@ -43,13 +43,7 @@ export class AuthService {
     if (!(await bcrypt.compare(authDto.password, user.password))) {
       throw new UnauthorizedException();
     }
-    const payload = {
-      sub: user.id,
-      userId: user.id,
-      login: user.login,
-      role: user.role,
-    } satisfies JwtPayload;
-    return this.generateJwt(payload);
+    return this.generateJwt(this.createJwtPayload(user));
   }
 
   async refresh(refreshDto: RefreshDto) {
@@ -57,25 +51,35 @@ export class AuthService {
       throw new UnauthorizedException('No refresh token is present in body');
     }
     try {
-      const payload: JwtPayload = await this.jwt.verifyAsync(
+      const payload: { userId: string } = await this.jwt.verifyAsync(
         refreshDto.refreshToken,
         {
           secret: process.env.JWT_SECRET_REFRESH_KEY,
         },
       );
-      return this.generateJwt(payload);
+      const user = await this.userService.findOne(payload.userId);
+      return this.generateJwt(this.createJwtPayload(user));
     } catch {
       throw new ForbiddenException('Refresh token is invalid or expired');
     }
   }
 
+  private createJwtPayload(user: User): JwtPayload {
+    return {
+      sub: user.id,
+      userId: user.id,
+      login: user.login,
+      role: user.role,
+    };
+  }
+
   private async generateJwt(payload: JwtPayload) {
     return {
-      access_token: await this.jwt.signAsync(payload, {
+      accessToken: await this.jwt.signAsync(payload, {
         expiresIn: process.env.TOKEN_EXPIRE_TIME as StringValue,
         secret: process.env.JWT_SECRET_KEY,
       }),
-      refresh_token: await this.jwt.signAsync(payload, {
+      refreshToken: await this.jwt.signAsync(payload, {
         expiresIn: process.env.TOKEN_REFRESH_EXPIRE_TIME as StringValue,
         secret: process.env.JWT_SECRET_REFRESH_KEY,
       }),
