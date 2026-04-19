@@ -1,77 +1,143 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { randomUUID } from 'node:crypto';
-import { ArticleStorage } from '../shared/article.storage';
-import type { Article } from './entities/article.entity';
-import { ArticleDto } from './dto/article-dto';
-import { CommentStorage } from '../shared/comment.storage';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { CreateUpdateArticleDto } from './dto/create-update-article-dto';
 import { Pagination } from '../shared/dto/pagination';
 import { Sorting } from '../shared/dto/sorting';
-import { SearchArticleDto } from '../users/dto/article-search.dto';
+import { PrismaService } from '../prisma/prisma.service';
+import { toPrismaPagination, toPrismaSorting } from '../shared/utils';
+import { GetArticlesFilterDto } from './dto/get-articles-filter';
+import { ArticleDto } from './dto/article-dto';
+import type { CurrentUserData } from '../auth/data/current-user.data';
 
 @Injectable()
 export class ArticleService {
-  constructor(
-    private readonly articleStorage: ArticleStorage,
-    private readonly commentStorage: CommentStorage,
-  ) {}
+  constructor(private readonly prismaService: PrismaService) {}
 
-  create(articleDto: ArticleDto) {
-    const timestamp = Date.now();
-
-    const article: Article = {
-      ...articleDto,
-      status: articleDto.status ?? 'draft',
-      authorId: articleDto.authorId ?? null,
-      categoryId: articleDto.categoryId ?? null,
-      tags: articleDto.tags ?? [],
-      id: randomUUID().toString(),
-      createdAt: timestamp,
-      updatedAt: timestamp,
-    };
-    this.articleStorage.save(article);
-    return article;
+  async create(
+    user: CurrentUserData,
+    articleDto: CreateUpdateArticleDto,
+  ): Promise<ArticleDto> {
+    const { authorId, categoryId, tags, ...data } = articleDto;
+    if (
+      user.role === 'admin' ||
+      (user.role === 'editor' && user.userId === authorId)
+    ) {
+      const article = await this.prismaService.article.create({
+        include: { tags: { select: { name: true } } },
+        data: {
+          ...data,
+          author: authorId ? { connect: { id: authorId } } : undefined,
+          category: categoryId ? { connect: { id: categoryId } } : undefined,
+          tags: {
+            connectOrCreate: (tags ?? []).map((tag) => ({
+              where: { name: tag },
+              create: { name: tag },
+            })),
+          },
+        },
+      });
+      return new ArticleDto({
+        ...article,
+        tags: article.tags.map((tag) => tag.name),
+      });
+    } else {
+      throw new ForbiddenException('Access denied');
+    }
   }
 
-  findAll(
-    filterDto: SearchArticleDto,
+  async findAll(
+    filter: GetArticlesFilterDto,
     pagination: Pagination,
     sorting: Sorting,
   ) {
-    return this.articleStorage.findAll(filterDto, pagination, sorting);
+    return this.prismaService.article.findMany({
+      where: {
+        OR: [
+          { status: filter.status },
+          { categoryId: filter.categoryId },
+          { authorId: filter.authorId },
+          {
+            tags: {
+              some: { name: filter.tag },
+            },
+          },
+        ],
+      },
+      ...toPrismaPagination(pagination),
+      ...toPrismaSorting(sorting),
+    });
   }
 
-  findOne(id: string) {
-    const article: Article | undefined = this.articleStorage.findOne(id);
+  async findOne(id: string) {
+    const article = await this.prismaService.article.findUnique({
+      where: { id },
+      include: { tags: { select: { name: true } } },
+    });
     if (!article) {
       throw new NotFoundException(`Article with ID ${id} not found`);
     }
-    return article;
-  }
-
-  update(id: string, articleDto: ArticleDto) {
-    const existingArticle = this.articleStorage.findOne(id);
-
-    if (!existingArticle) {
-      throw new NotFoundException(`Article with ID ${id} not found`);
-    }
-
-    const article: Article = {
-      ...existingArticle,
-      ...articleDto,
-      updatedAt: Date.now(),
-
-      id: existingArticle.id,
-      createdAt: existingArticle.createdAt,
+    return {
+      ...article,
+      tags: article.tags.map((tag) => tag.name),
     };
-    return this.articleStorage.save(article);
   }
 
-  remove(id: string) {
-    const wasDeleted = this.articleStorage.remove(id);
-    if (!wasDeleted) {
+  async update(
+    user: CurrentUserData,
+    id: string,
+    articleDto: CreateUpdateArticleDto,
+  ) {
+    if (user.role !== 'admin' && user.role !== 'editor') {
+      throw new ForbiddenException('Access denied');
+    }
+    const { authorId, categoryId, tags, ...data } = articleDto;
+    const articleFromDb = await this.findOne(id);
+    if (
+      user.role === 'editor' &&
+      (user.userId !== articleFromDb.authorId ||
+        (authorId !== undefined && user.userId !== authorId))
+    ) {
+      throw new ForbiddenException('Access denied');
+    }
+
+    try {
+      return await this.prismaService.article.update({
+        where: { id },
+        data: {
+          ...data,
+          author: authorId ? { connect: { id: authorId } } : undefined,
+          category: categoryId ? { connect: { id: categoryId } } : undefined,
+          tags: tags
+            ? {
+                connectOrCreate: tags.map((tag) => ({
+                  where: { name: tag },
+                  create: { name: tag },
+                })),
+              }
+            : undefined,
+        },
+      });
+    } catch {
       throw new NotFoundException(`Article with ID ${id} not found`);
     }
-    this.commentStorage.removeByArticleId(id);
-    return wasDeleted;
+  }
+
+  async remove(user: CurrentUserData, id: string) {
+    if (user.role !== 'admin' && user.role !== 'editor') {
+      throw new ForbiddenException('Access denied');
+    }
+    const articleFromDb = await this.findOne(id);
+    if (user.role === 'editor' && user.userId !== articleFromDb.authorId) {
+      throw new ForbiddenException('Access denied');
+    }
+
+    try {
+      await this.prismaService.article.delete({ where: { id } });
+    } catch {
+      throw new NotFoundException(`Article with ID ${id} not found`);
+    }
   }
 }
