@@ -32,6 +32,7 @@ export class ArticleController {
   constructor(private readonly articleService: ArticleService) {}
 
   @Post()
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Create article' })
   @ApiBody({ type: CreateUpdateArticleDto })
   @ApiResponse({ status: 201, description: 'Article created' })
@@ -39,8 +40,11 @@ export class ArticleController {
     status: 400,
     description: 'Required fields should not be empty',
   })
-  create(@Body() articleDto: CreateUpdateArticleDto) {
-    return this.articleService.create(articleDto);
+  create(
+    @CurrentUser() user: CurrentUserData,
+    @Body() articleDto: CreateUpdateArticleDto,
+  ) {
+    return this.articleService.create(user, articleDto);
   }
 
   @Get()
@@ -59,6 +63,7 @@ export class ArticleController {
   }
 
   @Get(':id')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Get article by ID' })
   @ApiParam({
     name: 'id',
@@ -96,24 +101,23 @@ export class ArticleController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() articleDto: CreateUpdateArticleDto,
   ) {
-    return this.articleService.update(id, articleDto);
+    return this.articleService.update(user, id, articleDto);
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard)
   @HttpCode(204)
   @ApiOperation({ summary: 'Delete article' })
-  @ApiParam({
-    name: 'id',
-    type: 'string',
-    format: 'uuid',
-  })
   @ApiResponse({ status: 204, description: 'Article deleted' })
   @ApiResponse({ status: 404, description: 'Article with ID not found' })
   @ApiResponse({
     status: 400,
     description: 'Validation failed (uuid is expected)',
   })
-  remove(@Param('id', ParseUUIDPipe) id: string) {
-    return this.articleService.remove(id);
+  remove(
+    @CurrentUser() user: CurrentUserData,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.articleService.remove(user, id);
   }
 }

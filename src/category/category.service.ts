@@ -1,15 +1,23 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CategoryDto } from './dto/category.dto';
 import { Pagination } from '../shared/dto/pagination';
 import { Sorting } from '../shared/dto/sorting';
 import { PrismaService } from '../prisma/prisma.service';
 import { toPrismaPagination, toPrismaSorting } from '../shared/utils';
+import type { CurrentUserData } from '../auth/data/current-user.data';
 
 @Injectable()
 export class CategoryService {
   constructor(private readonly prismaService: PrismaService) {}
 
-  async create(categoryDto: CategoryDto) {
+  async create(user: CurrentUserData, categoryDto: CategoryDto) {
+    if (user.role === 'viewer' || user.role === 'editor') {
+      throw new ForbiddenException('Access denied');
+    }
     return this.prismaService.category.create({
       data: categoryDto,
     });
@@ -32,7 +40,10 @@ export class CategoryService {
     return category;
   }
 
-  async update(id: string, categoryDto: CategoryDto) {
+  async update(user: CurrentUserData, id: string, categoryDto: CategoryDto) {
+    if (user.role === 'viewer' || user.role === 'editor') {
+      throw new ForbiddenException('Access denied');
+    }
     try {
       return await this.prismaService.category.update({
         where: { id },
@@ -43,7 +54,10 @@ export class CategoryService {
     }
   }
 
-  async remove(id: string) {
+  async remove(user: CurrentUserData, id: string) {
+    if (user.role === 'viewer' || user.role === 'editor') {
+      throw new ForbiddenException('Access denied');
+    }
     try {
       await this.prismaService.category.delete({ where: { id } });
     } catch {

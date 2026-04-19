@@ -8,6 +8,7 @@ import {
   ParseUUIDPipe,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { CommentService } from './comment.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
@@ -20,6 +21,9 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { SearchCommentDto } from '../users/dto/comment-search.dto';
+import { JwtAuthGuard } from '../auth/guard/jwt.guard';
+import { CurrentUser } from '../auth/decorator/current-user.decorator';
+import type { CurrentUserData } from '../auth/data/current-user.data';
 
 @ApiTags('comment')
 @Controller('comment')
@@ -27,6 +31,7 @@ export class CommentController {
   constructor(private readonly commentService: CommentService) {}
 
   @Post()
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Create comment' })
   @ApiBody({ type: CreateCommentDto })
   @ApiResponse({ status: 201, description: 'Comment created successfully' })
@@ -38,11 +43,15 @@ export class CommentController {
     status: 422,
     description: 'Cannot create comment: Article with articleId does not exist',
   })
-  create(@Body() commentDto: CreateCommentDto) {
-    return this.commentService.create(commentDto);
+  create(
+    @CurrentUser() user: CurrentUserData,
+    @Body() commentDto: CreateCommentDto,
+  ) {
+    return this.commentService.create(user, commentDto);
   }
 
   @Get()
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Get comments by articleId' })
   @ApiResponse({ status: 200, description: 'List of comments' })
   @ApiQuery({
@@ -56,6 +65,7 @@ export class CommentController {
   }
 
   @Get(':id')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Get comment by ID' })
   @ApiParam({
     name: 'id',
@@ -73,6 +83,7 @@ export class CommentController {
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard)
   @HttpCode(204)
   @ApiOperation({ summary: 'Delete comment' })
   @ApiParam({
@@ -86,7 +97,10 @@ export class CommentController {
     status: 400,
     description: 'Validation failed (uuid is expected)',
   })
-  remove(@Param('id', ParseUUIDPipe) id: string) {
-    return this.commentService.remove(id);
+  remove(
+    @CurrentUser() user: CurrentUserData,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.commentService.remove(user, id);
   }
 }

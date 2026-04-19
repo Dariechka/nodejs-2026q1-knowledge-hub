@@ -1,4 +1,5 @@
 import {
+  ForbiddenException,
   Injectable,
   NotFoundException,
   UnprocessableEntityException,
@@ -10,12 +11,22 @@ import { GetCommentFilterDto } from './dto/get-comment-filter';
 import { PrismaService } from '../prisma/prisma.service';
 import { toPrismaPagination, toPrismaSorting } from '../shared/utils';
 import { CommentDto } from './dto/comment.dto';
+import type { CurrentUserData } from '../auth/data/current-user.data';
 
 @Injectable()
 export class CommentService {
   constructor(private readonly prismaService: PrismaService) {}
 
-  async create(commentDto: CreateCommentDto): Promise<CommentDto> {
+  async create(
+    user: CurrentUserData,
+    commentDto: CreateCommentDto,
+  ): Promise<CommentDto> {
+    if (
+      user.role === 'viewer' ||
+      (user.role === 'editor' && user.userId !== commentDto.authorId)
+    ) {
+      throw new ForbiddenException('Access denied');
+    }
     const article = await this.prismaService.article.findUnique({
       where: { id: commentDto.articleId },
     });
@@ -60,7 +71,10 @@ export class CommentService {
     return comment;
   }
 
-  async remove(id: string) {
+  async remove(user: CurrentUserData, id: string) {
+    if (user.role === 'viewer' || user.role === 'editor') {
+      throw new ForbiddenException('Access denied');
+    }
     try {
       await this.prismaService.comment.delete({ where: { id } });
     } catch {
