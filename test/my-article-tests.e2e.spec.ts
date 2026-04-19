@@ -1,6 +1,11 @@
 import { request } from './lib';
 import { StatusCodes } from 'http-status-codes';
 import { articlesRoutes, categoriesRoutes } from './endpoints';
+import {
+  getTokenAndUserId,
+  removeTokenUser,
+  shouldAuthorizationBeTested,
+} from './utils';
 
 const createArticleDto = {
   title: 'TEMP_ARTICLE',
@@ -17,10 +22,30 @@ const createCategoryDto = {
 };
 
 describe('Additional Article tests', () => {
+  const unauthorizedRequest = request;
   const commonHeaders = { Accept: 'application/json' };
+  let mockUserId: string | undefined;
+
+  beforeAll(async () => {
+    if (shouldAuthorizationBeTested) {
+      const result = await getTokenAndUserId(unauthorizedRequest);
+      commonHeaders['Authorization'] = result.token;
+      mockUserId = result.mockUserId;
+    }
+  });
+
+  afterAll(async () => {
+    if (mockUserId) {
+      await removeTokenUser(unauthorizedRequest, mockUserId, commonHeaders);
+    }
+
+    if (commonHeaders['Authorization']) {
+      delete commonHeaders['Authorization'];
+    }
+  });
 
   it('should create, delete, and return 404 on fetching deleted article', async () => {
-    const createResponse = await request
+    const createResponse = await unauthorizedRequest
       .post(articlesRoutes.create)
       .set(commonHeaders)
       .send(createArticleDto);
@@ -28,13 +53,13 @@ describe('Additional Article tests', () => {
     expect(createResponse.status).toBe(StatusCodes.CREATED);
     const { id } = createResponse.body;
 
-    const deleteResponse = await request
+    const deleteResponse = await unauthorizedRequest
       .delete(articlesRoutes.delete(id))
       .set(commonHeaders);
 
     expect(deleteResponse.status).toBe(StatusCodes.NO_CONTENT);
 
-    const getResponse = await request
+    const getResponse = await unauthorizedRequest
       .get(articlesRoutes.getById(id))
       .set(commonHeaders);
 
@@ -42,7 +67,7 @@ describe('Additional Article tests', () => {
   });
 
   it('should create article with category and verify category assignment', async () => {
-    const categoryResponse = await request
+    const categoryResponse = await unauthorizedRequest
       .post(categoriesRoutes.create)
       .set(commonHeaders)
       .send(createCategoryDto);
@@ -50,7 +75,7 @@ describe('Additional Article tests', () => {
     expect(categoryResponse.status).toBe(StatusCodes.CREATED);
     const { id: categoryId } = categoryResponse.body;
 
-    const articleResponse = await request
+    const articleResponse = await unauthorizedRequest
       .post(articlesRoutes.create)
       .set(commonHeaders)
       .send({ ...createArticleDto, categoryId });
@@ -58,7 +83,7 @@ describe('Additional Article tests', () => {
     expect(articleResponse.status).toBe(StatusCodes.CREATED);
     const { id: articleId } = articleResponse.body;
 
-    const getResponse = await request
+    const getResponse = await unauthorizedRequest
       .get(articlesRoutes.getById(articleId))
       .set(commonHeaders);
 
@@ -66,17 +91,17 @@ describe('Additional Article tests', () => {
     expect(getResponse.body.categoryId).toBe(categoryId);
 
     // Cleanup
-    await request
+    await unauthorizedRequest
       .delete(articlesRoutes.delete(articleId))
       .set(commonHeaders);
-    await request
+    await unauthorizedRequest
       .delete(categoriesRoutes.delete(categoryId))
       .set(commonHeaders);
   });
 
   it('should correctly handle article with tags', async () => {
     const tags = ['nestjs', 'testing'];
-    const articleResponse = await request
+    const articleResponse = await unauthorizedRequest
       .post(articlesRoutes.create)
       .set(commonHeaders)
       .send({ ...createArticleDto, tags });
@@ -85,7 +110,7 @@ describe('Additional Article tests', () => {
     const { id: articleId } = articleResponse.body;
 
     // Fetch article and verify tags
-    const getResponse = await request
+    const getResponse = await unauthorizedRequest
       .get(articlesRoutes.getById(articleId))
       .set(commonHeaders);
 
