@@ -15,12 +15,13 @@ export class CategoryService {
   constructor(private readonly prismaService: PrismaService) {}
 
   async create(user: CurrentUserData, categoryDto: CategoryDto) {
-    if (user.role === 'viewer' || user.role === 'editor') {
+    if (user.role === 'admin') {
+      return this.prismaService.category.create({
+        data: categoryDto,
+      });
+    } else {
       throw new ForbiddenException('Access denied');
     }
-    return this.prismaService.category.create({
-      data: categoryDto,
-    });
   }
 
   async findAll(pagination: Pagination, sorting: Sorting) {
@@ -41,27 +42,29 @@ export class CategoryService {
   }
 
   async update(user: CurrentUserData, id: string, categoryDto: CategoryDto) {
-    if (user.role === 'viewer' || user.role === 'editor') {
+    if (user.role === 'admin') {
+      try {
+        return await this.prismaService.category.update({
+          where: { id },
+          data: categoryDto,
+        });
+      } catch {
+        throw new NotFoundException(`Category with ID ${id} not found`);
+      }
+    } else {
       throw new ForbiddenException('Access denied');
-    }
-    try {
-      return await this.prismaService.category.update({
-        where: { id },
-        data: categoryDto,
-      });
-    } catch {
-      throw new NotFoundException(`Category with ID ${id} not found`);
     }
   }
 
   async remove(user: CurrentUserData, id: string) {
-    if (user.role === 'viewer' || user.role === 'editor') {
+    if (user.role === 'admin') {
+      try {
+        await this.prismaService.category.delete({ where: { id } });
+      } catch {
+        throw new NotFoundException(`Category with ID ${id} not found`);
+      }
+    } else {
       throw new ForbiddenException('Access denied');
-    }
-    try {
-      await this.prismaService.category.delete({ where: { id } });
-    } catch {
-      throw new NotFoundException(`Category with ID ${id} not found`);
     }
   }
 }

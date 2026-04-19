@@ -22,29 +22,30 @@ export class CommentService {
     commentDto: CreateCommentDto,
   ): Promise<CommentDto> {
     if (
-      user.role === 'viewer' ||
-      (user.role === 'editor' && user.userId !== commentDto.authorId)
+      user.role === 'admin' ||
+      (user.role === 'editor' && user.userId === commentDto.authorId)
     ) {
+      const article = await this.prismaService.article.findUnique({
+        where: { id: commentDto.articleId },
+      });
+      if (!article) {
+        throw new UnprocessableEntityException(
+          `Cannot create comment: Article ${commentDto.articleId} does not exist`,
+        );
+      }
+
+      const { authorId, articleId, ...data } = commentDto;
+      const newComment = await this.prismaService.comment.create({
+        data: {
+          ...data,
+          author: authorId ? { connect: { id: authorId } } : undefined,
+          article: articleId ? { connect: { id: articleId } } : undefined,
+        },
+      });
+      return new CommentDto(newComment);
+    } else {
       throw new ForbiddenException('Access denied');
     }
-    const article = await this.prismaService.article.findUnique({
-      where: { id: commentDto.articleId },
-    });
-    if (!article) {
-      throw new UnprocessableEntityException(
-        `Cannot create comment: Article ${commentDto.articleId} does not exist`,
-      );
-    }
-
-    const { authorId, articleId, ...data } = commentDto;
-    const newComment = await this.prismaService.comment.create({
-      data: {
-        ...data,
-        author: authorId ? { connect: { id: authorId } } : undefined,
-        article: articleId ? { connect: { id: articleId } } : undefined,
-      },
-    });
-    return new CommentDto(newComment);
   }
 
   async findByArticleId(
@@ -72,13 +73,18 @@ export class CommentService {
   }
 
   async remove(user: CurrentUserData, id: string) {
-    if (user.role === 'viewer' || user.role === 'editor') {
+    const commentFromDb = await this.findOne(id);
+    if (
+      user.role === 'admin' ||
+      (user.role === 'editor' && user.userId === commentFromDb.authorId)
+    ) {
+      try {
+        await this.prismaService.comment.delete({ where: { id } });
+      } catch {
+        throw new NotFoundException(`Comment with ID ${id} not found`);
+      }
+    } else {
       throw new ForbiddenException('Access denied');
-    }
-    try {
-      await this.prismaService.comment.delete({ where: { id } });
-    } catch {
-      throw new NotFoundException(`Comment with ID ${id} not found`);
     }
   }
 }
