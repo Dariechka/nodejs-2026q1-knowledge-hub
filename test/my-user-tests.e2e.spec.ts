@@ -1,8 +1,14 @@
 import { usersRoutes } from './endpoints';
 import { StatusCodes } from 'http-status-codes';
 import { request } from './lib';
+import {
+  getTokenAndUserId,
+  removeTokenUser,
+  shouldAuthorizationBeTested,
+} from './utils';
 
 describe('Users Additional Tests', () => {
+  const unauthorizedRequest = request;
   let mockUserId: string | undefined;
   const commonHeaders = { Accept: 'application/json' };
   const newUserDto = {
@@ -10,8 +16,26 @@ describe('Users Additional Tests', () => {
     password: 'EXTRA_PASSWORD',
   };
 
+  beforeAll(async () => {
+    if (shouldAuthorizationBeTested) {
+      const result = await getTokenAndUserId(unauthorizedRequest);
+      commonHeaders['Authorization'] = result.token;
+      mockUserId = result.mockUserId;
+    }
+  });
+
+  afterAll(async () => {
+    if (mockUserId) {
+      await removeTokenUser(unauthorizedRequest, mockUserId, commonHeaders);
+    }
+
+    if (commonHeaders['Authorization']) {
+      delete commonHeaders['Authorization'];
+    }
+  });
+
   it('should reject update if old password is incorrect', async () => {
-    const createResponse = await request
+    const createResponse = await unauthorizedRequest
       .post(usersRoutes.create)
       .set(commonHeaders)
       .send(newUserDto);
@@ -20,7 +44,7 @@ describe('Users Additional Tests', () => {
     expect(createResponse.statusCode).toBe(StatusCodes.CREATED);
 
     // Attempt update with wrong old password
-    const updateResponse = await request
+    const updateResponse = await unauthorizedRequest
       .put(usersRoutes.update(id))
       .set(commonHeaders)
       .send({ oldPassword: 'WRONG', newPassword: 'NEW_PASSWORD' });
@@ -29,7 +53,7 @@ describe('Users Additional Tests', () => {
     expect(updateResponse.body.message).toMatch('Old password is incorrect');
 
     // Cleanup
-    const cleanupResponse = await request
+    const cleanupResponse = await unauthorizedRequest
       .delete(usersRoutes.delete(id))
       .set(commonHeaders);
 
@@ -42,7 +66,7 @@ describe('Users Additional Tests', () => {
       password: 'TEMP_PASS',
     };
 
-    const createResponse = await request
+    const createResponse = await unauthorizedRequest
       .post(usersRoutes.create)
       .set(commonHeaders)
       .send(createUserDto);
@@ -50,13 +74,13 @@ describe('Users Additional Tests', () => {
     expect(createResponse.status).toBe(StatusCodes.CREATED);
     const { id } = createResponse.body;
 
-    const deleteResponse = await request
+    const deleteResponse = await unauthorizedRequest
       .delete(usersRoutes.delete(id))
       .set(commonHeaders);
 
     expect(deleteResponse.status).toBe(StatusCodes.NO_CONTENT);
 
-    const getResponse = await request
+    const getResponse = await unauthorizedRequest
       .get(usersRoutes.getById(id))
       .set(commonHeaders);
 

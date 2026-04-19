@@ -62,13 +62,13 @@ export class UsersService {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
 
-    if (user.password !== updatePasswordDto.oldPassword) {
+    if (updatePasswordDto.oldPassword !== user.password) {
       throw new ForbiddenException('Old password is incorrect');
     }
 
     const newUser = await this.prismaService.user.update({
       where: { id },
-      data: { password: updatePasswordDto.newPassword },
+      data: { password: { set: updatePasswordDto.newPassword } },
     });
     return new UserDto(newUser);
   }
