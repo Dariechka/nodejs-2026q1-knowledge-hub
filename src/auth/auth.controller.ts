@@ -1,5 +1,13 @@
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { Body, Controller, HttpCode, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  ForbiddenException,
+  HttpCode,
+  Post,
+  Req,
+} from '@nestjs/common';
+import { Request } from 'express';
 import { AuthService } from './auth.service';
 import { AuthDto } from './dto/auth.dto';
 import { RefreshDto } from './dto/refresh.dto';
@@ -8,6 +16,8 @@ import type { UserDto } from '../users/dto/user.dto';
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
+  private ips: Map<string, number[]> = new Map();
+
   constructor(private readonly authService: AuthService) {}
 
   @Post('signup')
@@ -19,7 +29,8 @@ export class AuthController {
     status: 400,
     description: 'Required fields should not be empty',
   })
-  signup(@Body() dto: AuthDto): Promise<UserDto> {
+  signup(@Req() req: Request, @Body() dto: AuthDto): Promise<UserDto> {
+    this.enforceRateLimiting(req);
     return this.authService.signup(dto);
   }
 
@@ -36,7 +47,8 @@ export class AuthController {
     status: 403,
     description: 'No user with such login/password',
   })
-  login(@Body() dto: AuthDto) {
+  login(@Req() req: Request, @Body() dto: AuthDto) {
+    this.enforceRateLimiting(req);
     return this.authService.login(dto);
   }
 
@@ -55,5 +67,32 @@ export class AuthController {
   })
   refresh(@Body() dto: RefreshDto) {
     return this.authService.refresh(dto);
+  }
+
+  private enforceRateLimiting(req: Request) {
+    if (
+      process.env.RATE_LIMIT_WINDOW_MS === undefined ||
+      process.env.RATE_LIMIT_THRESHOLD === undefined
+    ) {
+      return;
+    }
+
+    const ip = req.socket.remoteAddress;
+    const currentTimestamp = Date.now();
+    if (this.ips.has(ip)) {
+      const oldHistory = this.ips.get(ip);
+      const newHistory = oldHistory.filter(
+        (timestamp) =>
+          currentTimestamp - timestamp <
+          Number(process.env.RATE_LIMIT_WINDOW_MS),
+      );
+      newHistory.push(currentTimestamp);
+      this.ips.set(ip, newHistory);
+      if (newHistory.length > Number(process.env.RATE_LIMIT_THRESHOLD)) {
+        throw new ForbiddenException('Access denied');
+      }
+    } else {
+      this.ips.set(ip, [currentTimestamp]);
+    }
   }
 }
