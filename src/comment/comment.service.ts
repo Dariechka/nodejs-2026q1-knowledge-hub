@@ -73,18 +73,18 @@ export class CommentService {
   }
 
   async remove(user: CurrentUserData, id: string) {
-    const commentFromDb = await this.findOne(id);
-    if (
-      user.role === 'admin' ||
-      (user.role === 'editor' && user.userId === commentFromDb.authorId)
-    ) {
-      try {
-        await this.prismaService.comment.delete({ where: { id } });
-      } catch {
-        throw new NotFoundException(`Comment with ID ${id} not found`);
-      }
-    } else {
+    if (user.role !== 'admin' && user.role !== 'editor') {
       throw new ForbiddenException('Access denied');
+    }
+    const commentFromDb = await this.findOne(id);
+    if (user.role === 'editor' && user.userId !== commentFromDb.authorId) {
+      throw new ForbiddenException('Access denied');
+    }
+
+    try {
+      await this.prismaService.comment.delete({ where: { id } });
+    } catch {
+      throw new NotFoundException(`Comment with ID ${id} not found`);
     }
   }
 }

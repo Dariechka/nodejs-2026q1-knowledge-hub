@@ -90,52 +90,54 @@ export class ArticleService {
     id: string,
     articleDto: CreateUpdateArticleDto,
   ) {
+    if (user.role !== 'admin' && user.role !== 'editor') {
+      throw new ForbiddenException('Access denied');
+    }
     const { authorId, categoryId, tags, ...data } = articleDto;
     const articleFromDb = await this.findOne(id);
     if (
-      user.role === 'admin' ||
-      (user.role === 'editor' &&
-        user.userId === articleFromDb.authorId &&
-        user.userId === authorId)
+      user.role === 'editor' &&
+      (user.userId !== articleFromDb.authorId ||
+        (authorId !== undefined && user.userId !== authorId))
     ) {
-      try {
-        return await this.prismaService.article.update({
-          where: { id },
-          data: {
-            ...data,
-            author: authorId ? { connect: { id: authorId } } : undefined,
-            category: categoryId ? { connect: { id: categoryId } } : undefined,
-            tags: tags
-              ? {
-                  connectOrCreate: tags.map((tag) => ({
-                    where: { name: tag },
-                    create: { name: tag },
-                  })),
-                }
-              : undefined,
-          },
-        });
-      } catch {
-        throw new NotFoundException(`Article with ID ${id} not found`);
-      }
-    } else {
       throw new ForbiddenException('Access denied');
+    }
+
+    try {
+      return await this.prismaService.article.update({
+        where: { id },
+        data: {
+          ...data,
+          author: authorId ? { connect: { id: authorId } } : undefined,
+          category: categoryId ? { connect: { id: categoryId } } : undefined,
+          tags: tags
+            ? {
+                connectOrCreate: tags.map((tag) => ({
+                  where: { name: tag },
+                  create: { name: tag },
+                })),
+              }
+            : undefined,
+        },
+      });
+    } catch {
+      throw new NotFoundException(`Article with ID ${id} not found`);
     }
   }
 
   async remove(user: CurrentUserData, id: string) {
-    const articleFromDb = await this.findOne(id);
-    if (
-      user.role === 'admin' ||
-      (user.role === 'editor' && user.userId === articleFromDb.authorId)
-    ) {
-      try {
-        await this.prismaService.article.delete({ where: { id } });
-      } catch {
-        throw new NotFoundException(`Article with ID ${id} not found`);
-      }
-    } else {
+    if (user.role !== 'admin' && user.role !== 'editor') {
       throw new ForbiddenException('Access denied');
+    }
+    const articleFromDb = await this.findOne(id);
+    if (user.role === 'editor' && user.userId !== articleFromDb.authorId) {
+      throw new ForbiddenException('Access denied');
+    }
+
+    try {
+      await this.prismaService.article.delete({ where: { id } });
+    } catch {
+      throw new NotFoundException(`Article with ID ${id} not found`);
     }
   }
 }

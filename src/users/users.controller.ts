@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   HttpCode,
   Param,
@@ -23,6 +24,8 @@ import {
 } from '@nestjs/swagger';
 import { SearchDto } from './dto/search.dto';
 import { JwtAuthGuard } from '../auth/guard/jwt.guard';
+import { CurrentUser } from '../auth/decorator/current-user.decorator';
+import type { CurrentUserData } from '../auth/data/current-user.data';
 
 @ApiTags('user')
 @Controller('user')
@@ -38,7 +41,13 @@ export class UsersController {
     status: 400,
     description: 'Required fields should not be empty',
   })
-  create(@Body() createUserDto: CreateUserDto) {
+  create(
+    @CurrentUser() user: CurrentUserData,
+    @Body() createUserDto: CreateUserDto,
+  ) {
+    if (user.role !== 'admin') {
+      throw new ForbiddenException('Access denied');
+    }
     return this.usersService.create(createUserDto);
   }
 
@@ -109,7 +118,16 @@ export class UsersController {
     status: 400,
     description: 'Validation failed (uuid is expected)',
   })
-  async remove(@Param('id', ParseUUIDPipe) id: string) {
+  async remove(
+    @CurrentUser() user: CurrentUserData,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    if (user.role !== 'admin' && user.role !== 'editor') {
+      throw new ForbiddenException('Access denied');
+    }
+    if (user.role === 'editor' && user.userId !== id) {
+      throw new ForbiddenException('Access denied');
+    }
     await this.usersService.remove(id);
   }
 }
