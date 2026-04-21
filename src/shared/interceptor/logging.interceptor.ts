@@ -23,11 +23,12 @@ export class LoggingInterceptor implements NestInterceptor {
     this.logger.log({ uuid, method, url, body: sanitize(body), params, query });
 
     return next.handle().pipe(
-      tap((response) => {
+      tap(() => {
         const delay = Date.now() - now;
+        const response = context.switchToHttp().getResponse();
         this.logger.log({
           uuid,
-          status: response.status,
+          status: response.statusCode,
           duration: `${delay}ms`,
         });
       }),
