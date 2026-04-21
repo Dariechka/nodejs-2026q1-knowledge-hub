@@ -1,6 +1,8 @@
 import { Sorting } from './dto/sorting';
 import { Pagination } from './dto/pagination';
 
+export const isProd = process.env.NODE_ENV === 'production';
+
 export const sort = <T>(items: Array<T>, sorting: Sorting): Array<T> => {
   if (sorting.sortBy === undefined || sorting.order === undefined) {
     return items;
@@ -56,4 +58,36 @@ export const toPrismaSorting = (
       [sortBy]: order,
     },
   };
+};
+
+type AnyObject = Record<string, any>;
+
+const SENSITIVE_KEYS = ['password', 'token'];
+
+const isSensitiveKey = (key: string): boolean => {
+  const lower = key.toLowerCase();
+  return SENSITIVE_KEYS.some((k) => lower.includes(k));
+};
+
+export const sanitize = <T = any>(input: T): T => {
+  if (Array.isArray(input)) {
+    return input.map((item) => sanitize(item)) as any;
+  }
+
+  if (input !== null && typeof input === 'object') {
+    const result: AnyObject = {};
+
+    for (const [key, value] of Object.entries(input)) {
+      if (isSensitiveKey(key)) {
+        result[key] = '[REDACTED]';
+        continue;
+      }
+
+      result[key] = sanitize(value);
+    }
+
+    return result as T;
+  }
+
+  return input;
 };
