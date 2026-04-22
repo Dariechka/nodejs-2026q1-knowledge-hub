@@ -33,8 +33,8 @@ export class AuthService {
         password: hash,
         role: 'viewer',
       });
-    } catch {
-      throw new BadRequestException('Login already taken');
+    } catch (error) {
+      throw new BadRequestException('Login already taken', { cause: error });
     }
   }
 
