@@ -13,10 +13,10 @@ export function registerProcessErrorHandlers(app: INestApplication) {
 
   process.on('unhandledRejection', async (reason, promise) => {
     logger.error(
-      'Unhandled Rejection at:',
-      promise,
-      'reason:',
-      reason instanceof Error ? reason.stack : JSON.stringify(reason),
+      'Unhandled Rejection at: ' +
+        promise +
+        ' reason: ' +
+        (reason instanceof Error ? reason.stack : JSON.stringify(reason)),
     );
     await shutdown(app);
   });
