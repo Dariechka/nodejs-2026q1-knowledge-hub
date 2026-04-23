@@ -25,7 +25,7 @@ import { SearchDto } from './dto/search.dto';
 import { JwtAuthGuard } from '../auth/guard/jwt.guard';
 import { CurrentUser } from '../auth/decorator/current-user.decorator';
 import type { CurrentUserData } from '../auth/data/current-user.data';
-import { ForbiddenError } from '../shared/error-handling/knowledge-hub-errors';
+import { ForbiddenError } from '../shared/error/knowledge-hub-errors';
 
 @ApiTags('user')
 @Controller('user')

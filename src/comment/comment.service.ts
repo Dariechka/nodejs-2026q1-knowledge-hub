@@ -11,7 +11,7 @@ import {
   ForbiddenError,
   UnprocessableError,
   NotFoundError,
-} from '../shared/error-handling/knowledge-hub-errors';
+} from '../shared/error/knowledge-hub-errors';
 
 @Injectable()
 export class CommentService {

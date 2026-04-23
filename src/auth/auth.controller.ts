@@ -5,7 +5,7 @@ import { AuthService } from './auth.service';
 import { AuthDto } from './dto/auth.dto';
 import { RefreshDto } from './dto/refresh.dto';
 import type { UserDto } from '../users/dto/user.dto';
-import { ForbiddenError } from '../shared/error-handling/knowledge-hub-errors';
+import { ForbiddenError } from '../shared/error/knowledge-hub-errors';
 
 @ApiTags('auth')
 @Controller('auth')

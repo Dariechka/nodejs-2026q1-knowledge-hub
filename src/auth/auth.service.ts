@@ -12,7 +12,7 @@ import {
   ValidationError,
   UnauthorizedError,
   ForbiddenError,
-} from '../shared/error-handling/knowledge-hub-errors';
+} from '../shared/error/knowledge-hub-errors';
 
 @Injectable()
 export class AuthService {

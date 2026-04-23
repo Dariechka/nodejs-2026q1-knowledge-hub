@@ -5,7 +5,7 @@ import {
   Logger,
   NestInterceptor,
 } from '@nestjs/common';
-import { catchError, Observable, tap, throwError } from 'rxjs';
+import { Observable, tap } from 'rxjs';
 import { randomUUID } from 'node:crypto';
 import { sanitize } from '../utils';
 
@@ -31,14 +31,6 @@ export class LoggingInterceptor implements NestInterceptor {
           status: response.statusCode,
           duration: `${delay}ms`,
         });
-      }),
-      catchError((err) => {
-        const delay = Date.now() - now;
-        request._logContext = {
-          uuid,
-          duration: `${delay}ms`,
-        };
-        return throwError(() => err);
       }),
     );
   }

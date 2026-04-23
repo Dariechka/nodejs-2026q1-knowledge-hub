@@ -10,7 +10,7 @@ import {
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { LoggingInterceptor } from './shared/interceptor/logging.interceptor';
 import { isProd } from './shared/utils';
-import { CustomExceptionFilter } from './shared/error-handling/global-exception-filter';
+import { ErrorInterceptor } from './shared/interceptor/error.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -29,9 +29,8 @@ async function bootstrap() {
   app.useGlobalInterceptors(
     new ClassSerializerInterceptor(app.get(Reflector)),
     new LoggingInterceptor(),
+    new ErrorInterceptor(),
   );
-  const httpAdapterHost = app.get(HttpAdapterHost);
-  app.useGlobalFilters(new CustomExceptionFilter(httpAdapterHost));
   const config = new DocumentBuilder()
     .setTitle('Nest.js Knowledge Hub API')
     .setDescription('API for Nest.js Knowledge Hub application')
