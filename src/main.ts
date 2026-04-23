@@ -1,16 +1,17 @@
-import { HttpAdapterHost, NestFactory, Reflector } from '@nestjs/core';
+import { NestFactory, Reflector } from '@nestjs/core';
 import { AppModule } from './app.module';
 import 'reflect-metadata';
 import {
   ClassSerializerInterceptor,
-  ValidationPipe,
   ConsoleLogger,
   LogLevel,
+  ValidationPipe,
 } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { LoggingInterceptor } from './shared/interceptor/logging.interceptor';
 import { isProd } from './shared/utils';
 import { ErrorInterceptor } from './shared/interceptor/error.interceptor';
+import { registerProcessErrorHandlers } from './shared/error-handling/register-process-error.handlers';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -19,6 +20,7 @@ async function bootstrap() {
       json: isProd,
     }),
   });
+  app.enableShutdownHooks();
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -39,6 +41,8 @@ async function bootstrap() {
 
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('doc', app, document);
+  registerProcessErrorHandlers(app);
   await app.listen(process.env.PORT);
 }
-bootstrap();
+
+void bootstrap();
