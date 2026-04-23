@@ -1,25 +1,16 @@
 import { NestFactory, Reflector } from '@nestjs/core';
 import { AppModule } from './app.module';
 import 'reflect-metadata';
-import {
-  ClassSerializerInterceptor,
-  ConsoleLogger,
-  LogLevel,
-  ValidationPipe,
-} from '@nestjs/common';
+import { ClassSerializerInterceptor, ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { LoggingInterceptor } from './shared/interceptor/logging.interceptor';
-import { isProd } from './shared/utils';
 import { ErrorInterceptor } from './shared/interceptor/error.interceptor';
 import { registerProcessErrorHandlers } from './shared/error-handling/register-process-error.handlers';
+import { Logger } from 'nestjs-pino';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, {
-    logger: new ConsoleLogger('', {
-      logLevels: [process.env.LOG_LEVEL ?? 'log'] as LogLevel[],
-      json: isProd,
-    }),
-  });
+  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  app.useLogger(app.get(Logger));
   app.enableShutdownHooks();
   app.useGlobalPipes(
     new ValidationPipe({
