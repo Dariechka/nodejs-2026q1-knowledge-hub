@@ -1,8 +1,4 @@
-import {
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { CreateUpdateArticleDto } from './dto/create-update-article-dto';
 import { Pagination } from '../shared/dto/pagination';
 import { Sorting } from '../shared/dto/sorting';
@@ -11,6 +7,10 @@ import { toPrismaPagination, toPrismaSorting } from '../shared/utils';
 import { GetArticlesFilterDto } from './dto/get-articles-filter';
 import { ArticleDto } from './dto/article-dto';
 import type { CurrentUserData } from '../auth/data/current-user.data';
+import {
+  ForbiddenError,
+  NotFoundError,
+} from '../shared/error-handling/knowledge-hub-errors';
 
 @Injectable()
 export class ArticleService {
@@ -44,7 +44,7 @@ export class ArticleService {
         tags: article.tags.map((tag) => tag.name),
       });
     } else {
-      throw new ForbiddenException('Access denied');
+      throw new ForbiddenError();
     }
   }
 
@@ -77,7 +77,7 @@ export class ArticleService {
       include: { tags: { select: { name: true } } },
     });
     if (!article) {
-      throw new NotFoundException(`Article with ID ${id} not found`);
+      throw new NotFoundError(`Article with ID ${id} not found`);
     }
     return {
       ...article,
@@ -91,7 +91,7 @@ export class ArticleService {
     articleDto: CreateUpdateArticleDto,
   ) {
     if (user.role !== 'admin' && user.role !== 'editor') {
-      throw new ForbiddenException('Access denied');
+      throw new ForbiddenError();
     }
     const { authorId, categoryId, tags, ...data } = articleDto;
     const articleFromDb = await this.findOne(id);
@@ -100,7 +100,7 @@ export class ArticleService {
       (user.userId !== articleFromDb.authorId ||
         (authorId !== undefined && user.userId !== authorId))
     ) {
-      throw new ForbiddenException('Access denied');
+      throw new ForbiddenError();
     }
 
     try {
@@ -121,23 +121,23 @@ export class ArticleService {
         },
       });
     } catch {
-      throw new NotFoundException(`Article with ID ${id} not found`);
+      throw new NotFoundError(`Article with ID ${id} not found`);
     }
   }
 
   async remove(user: CurrentUserData, id: string) {
     if (user.role !== 'admin' && user.role !== 'editor') {
-      throw new ForbiddenException('Access denied');
+      throw new ForbiddenError();
     }
     const articleFromDb = await this.findOne(id);
     if (user.role === 'editor' && user.userId !== articleFromDb.authorId) {
-      throw new ForbiddenException('Access denied');
+      throw new ForbiddenError();
     }
 
     try {
       await this.prismaService.article.delete({ where: { id } });
     } catch {
-      throw new NotFoundException(`Article with ID ${id} not found`);
+      throw new NotFoundError(`Article with ID ${id} not found`);
     }
   }
 }

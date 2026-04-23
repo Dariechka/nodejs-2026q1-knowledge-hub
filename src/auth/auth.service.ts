@@ -1,9 +1,4 @@
-import {
-  BadRequestException,
-  ForbiddenException,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import type { AuthDto } from './dto/auth.dto';
 import type { RefreshDto } from './dto/refresh.dto';
 import { JwtService } from '@nestjs/jwt';
@@ -13,6 +8,11 @@ import { UsersService } from '../users/users.service';
 import type { StringValue } from 'ms';
 import type { User } from '@prisma/client';
 import type { UserDto } from '../users/dto/user.dto';
+import {
+  ValidationError,
+  UnauthorizedError,
+  ForbiddenError,
+} from '../shared/error-handling/knowledge-hub-errors';
 
 @Injectable()
 export class AuthService {
@@ -34,21 +34,21 @@ export class AuthService {
         role: 'viewer',
       });
     } catch (error) {
-      throw new BadRequestException('Login already taken', { cause: error });
+      throw new ValidationError('Login already taken');
     }
   }
 
   async login(authDto: AuthDto) {
     const user = await this.userService.findByLogin(authDto.login);
     if (!(await bcrypt.compare(authDto.password, user.password))) {
-      throw new UnauthorizedException();
+      throw new UnauthorizedError();
     }
     return this.generateJwt(this.createJwtPayload(user));
   }
 
   async refresh(refreshDto: RefreshDto) {
     if (!refreshDto.refreshToken) {
-      throw new UnauthorizedException('No refresh token is present in body');
+      throw new UnauthorizedError('No refresh token is present in body');
     }
     try {
       const payload: { userId: string } = await this.jwt.verifyAsync(
@@ -60,7 +60,7 @@ export class AuthService {
       const user = await this.userService.findOne(payload.userId);
       return this.generateJwt(this.createJwtPayload(user));
     } catch {
-      throw new ForbiddenException('Refresh token is invalid or expired');
+      throw new ForbiddenError('Refresh token is invalid or expired');
     }
   }
 

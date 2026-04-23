@@ -1,14 +1,14 @@
-import {
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { CategoryDto } from './dto/category.dto';
 import { Pagination } from '../shared/dto/pagination';
 import { Sorting } from '../shared/dto/sorting';
 import { PrismaService } from '../prisma/prisma.service';
 import { toPrismaPagination, toPrismaSorting } from '../shared/utils';
 import type { CurrentUserData } from '../auth/data/current-user.data';
+import {
+  ForbiddenError,
+  NotFoundError,
+} from '../shared/error-handling/knowledge-hub-errors';
 
 @Injectable()
 export class CategoryService {
@@ -20,7 +20,7 @@ export class CategoryService {
         data: categoryDto,
       });
     } else {
-      throw new ForbiddenException('Access denied');
+      throw new ForbiddenError();
     }
   }
 
@@ -36,7 +36,7 @@ export class CategoryService {
       where: { id },
     });
     if (!category) {
-      throw new NotFoundException(`Category with ID ${id} not found`);
+      throw new NotFoundError(`Category with ID ${id} not found`);
     }
     return category;
   }
@@ -49,10 +49,10 @@ export class CategoryService {
           data: categoryDto,
         });
       } catch {
-        throw new NotFoundException(`Category with ID ${id} not found`);
+        throw new NotFoundError(`Category with ID ${id} not found`);
       }
     } else {
-      throw new ForbiddenException('Access denied');
+      throw new ForbiddenError();
     }
   }
 
@@ -61,10 +61,10 @@ export class CategoryService {
       try {
         await this.prismaService.category.delete({ where: { id } });
       } catch {
-        throw new NotFoundException(`Category with ID ${id} not found`);
+        throw new NotFoundError(`Category with ID ${id} not found`);
       }
     } else {
-      throw new ForbiddenException('Access denied');
+      throw new ForbiddenError();
     }
   }
 }

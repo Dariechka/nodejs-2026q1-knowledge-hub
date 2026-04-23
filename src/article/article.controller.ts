@@ -92,10 +92,6 @@ export class ArticleController {
   @ApiBody({ type: CreateUpdateArticleDto })
   @ApiResponse({ status: 200, description: 'Article updated' })
   @ApiResponse({ status: 404, description: 'Article with ID not found' })
-  @ApiResponse({
-    status: 400,
-    description: 'Validation failed (uuid is expected)',
-  })
   update(
     @CurrentUser() user: CurrentUserData,
     @Param('id', ParseUUIDPipe) id: string,

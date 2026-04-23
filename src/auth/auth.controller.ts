@@ -1,17 +1,11 @@
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import {
-  Body,
-  Controller,
-  ForbiddenException,
-  HttpCode,
-  Post,
-  Req,
-} from '@nestjs/common';
+import { Body, Controller, HttpCode, Post, Req } from '@nestjs/common';
 import { Request } from 'express';
 import { AuthService } from './auth.service';
 import { AuthDto } from './dto/auth.dto';
 import { RefreshDto } from './dto/refresh.dto';
 import type { UserDto } from '../users/dto/user.dto';
+import { ForbiddenError } from '../shared/error-handling/knowledge-hub-errors';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -89,7 +83,7 @@ export class AuthController {
       newHistory.push(currentTimestamp);
       this.ips.set(ip, newHistory);
       if (newHistory.length > Number(process.env.RATE_LIMIT_THRESHOLD)) {
-        throw new ForbiddenException('Access denied');
+        throw new ForbiddenError();
       }
     } else {
       this.ips.set(ip, [currentTimestamp]);

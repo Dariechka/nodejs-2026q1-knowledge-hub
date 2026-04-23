@@ -1,8 +1,4 @@
-import {
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdatePasswordDto } from './dto/update-password.dto';
 import { Pagination } from '../shared/dto/pagination';
@@ -10,6 +6,10 @@ import { Sorting } from '../shared/dto/sorting';
 import { PrismaService } from '../prisma/prisma.service';
 import { toPrismaPagination, toPrismaSorting } from '../shared/utils';
 import { UserDto } from './dto/user.dto';
+import {
+  ForbiddenError,
+  NotFoundError,
+} from '../shared/error-handling/knowledge-hub-errors';
 
 @Injectable()
 export class UsersService {
@@ -36,7 +36,7 @@ export class UsersService {
       where: { id },
     });
     if (!user) {
-      throw new NotFoundException(`User with ID ${id} not found`);
+      throw new NotFoundError(`User with ID ${id} not found`);
     }
     return new UserDto(user);
   }
@@ -46,7 +46,7 @@ export class UsersService {
       where: { login },
     });
     if (!user) {
-      throw new NotFoundException(`User with login ${login} not found`);
+      throw new NotFoundError(`User with login ${login} not found`);
     }
     return new UserDto(user);
   }
@@ -59,11 +59,11 @@ export class UsersService {
       where: { id },
     });
     if (!user) {
-      throw new NotFoundException(`User with ID ${id} not found`);
+      throw new NotFoundError(`User with ID ${id} not found`);
     }
 
     if (updatePasswordDto.oldPassword !== user.password) {
-      throw new ForbiddenException('Old password is incorrect');
+      throw new ForbiddenError('Old password is incorrect');
     }
 
     const newUser = await this.prismaService.user.update({
@@ -77,7 +77,7 @@ export class UsersService {
     try {
       await this.prismaService.user.delete({ where: { id } });
     } catch {
-      throw new NotFoundException(`User with ID ${id} not found`);
+      throw new NotFoundError(`User with ID ${id} not found`);
     }
   }
 }

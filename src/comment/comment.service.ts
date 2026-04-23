@@ -1,9 +1,4 @@
-import {
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-  UnprocessableEntityException,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { Pagination } from '../shared/dto/pagination';
 import { Sorting } from '../shared/dto/sorting';
@@ -12,6 +7,11 @@ import { PrismaService } from '../prisma/prisma.service';
 import { toPrismaPagination, toPrismaSorting } from '../shared/utils';
 import { CommentDto } from './dto/comment.dto';
 import type { CurrentUserData } from '../auth/data/current-user.data';
+import {
+  ForbiddenError,
+  UnprocessableError,
+  NotFoundError,
+} from '../shared/error-handling/knowledge-hub-errors';
 
 @Injectable()
 export class CommentService {
@@ -29,7 +29,7 @@ export class CommentService {
         where: { id: commentDto.articleId },
       });
       if (!article) {
-        throw new UnprocessableEntityException(
+        throw new UnprocessableError(
           `Cannot create comment: Article ${commentDto.articleId} does not exist`,
         );
       }
@@ -44,7 +44,7 @@ export class CommentService {
       });
       return new CommentDto(newComment);
     } else {
-      throw new ForbiddenException('Access denied');
+      throw new ForbiddenError();
     }
   }
 
@@ -67,24 +67,24 @@ export class CommentService {
       where: { id },
     });
     if (!comment) {
-      throw new NotFoundException(`Comment with ID ${id} not found`);
+      throw new NotFoundError(`Comment with ID ${id} not found`);
     }
     return comment;
   }
 
   async remove(user: CurrentUserData, id: string) {
     if (user.role !== 'admin' && user.role !== 'editor') {
-      throw new ForbiddenException('Access denied');
+      throw new ForbiddenError();
     }
     const commentFromDb = await this.findOne(id);
     if (user.role === 'editor' && user.userId !== commentFromDb.authorId) {
-      throw new ForbiddenException('Access denied');
+      throw new ForbiddenError();
     }
 
     try {
       await this.prismaService.comment.delete({ where: { id } });
     } catch {
-      throw new NotFoundException(`Comment with ID ${id} not found`);
+      throw new NotFoundError(`Comment with ID ${id} not found`);
     }
   }
 }

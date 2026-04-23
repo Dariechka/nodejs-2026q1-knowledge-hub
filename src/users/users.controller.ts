@@ -2,7 +2,6 @@ import {
   Body,
   Controller,
   Delete,
-  ForbiddenException,
   Get,
   HttpCode,
   Param,
@@ -26,6 +25,7 @@ import { SearchDto } from './dto/search.dto';
 import { JwtAuthGuard } from '../auth/guard/jwt.guard';
 import { CurrentUser } from '../auth/decorator/current-user.decorator';
 import type { CurrentUserData } from '../auth/data/current-user.data';
+import { ForbiddenError } from '../shared/error-handling/knowledge-hub-errors';
 
 @ApiTags('user')
 @Controller('user')
@@ -46,7 +46,7 @@ export class UsersController {
     @Body() createUserDto: CreateUserDto,
   ) {
     if (user.role !== 'admin') {
-      throw new ForbiddenException('Access denied');
+      throw new ForbiddenError();
     }
     return this.usersService.create(createUserDto);
   }
@@ -123,10 +123,10 @@ export class UsersController {
     @Param('id', ParseUUIDPipe) id: string,
   ) {
     if (user.role !== 'admin' && user.role !== 'editor') {
-      throw new ForbiddenException('Access denied');
+      throw new ForbiddenError();
     }
     if (user.role === 'editor' && user.userId !== id) {
-      throw new ForbiddenException('Access denied');
+      throw new ForbiddenError();
     }
     await this.usersService.remove(id);
   }
