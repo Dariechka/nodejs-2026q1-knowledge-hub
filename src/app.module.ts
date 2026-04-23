@@ -7,16 +7,7 @@ import { SharedModule } from './shared/shared.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
-import { LoggerModule, nativeLoggerOptions } from 'nestjs-pino';
-import { isProd } from './shared/utils';
-
-const logLevels = {
-  log: 'info',
-  debug: 'debug',
-  warn: 'warn',
-  error: 'error',
-  verbose: 'trace',
-};
+import { configureLoggingModule } from './shared/logging';
 
 @Module({
   imports: [
@@ -27,26 +18,7 @@ const logLevels = {
     SharedModule,
     PrismaModule,
     AuthModule,
-    LoggerModule.forRoot({
-      pinoHttp: isProd
-        ? {
-            ...nativeLoggerOptions,
-            level: logLevels[process.env.LOG_LEVEL] || 'info',
-          }
-        : {
-            level: logLevels[process.env.LOG_LEVEL] || 'info',
-            transport: {
-              target: 'pino-pretty',
-              options: {
-                colorize: false,
-                singleLine: true,
-                translateTime: 'HH:MM:ss.l',
-                messageFormat: '{context} - {msg}',
-                ignore: 'pid,hostname,context',
-              },
-            },
-          },
-    }),
+    configureLoggingModule(),
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
