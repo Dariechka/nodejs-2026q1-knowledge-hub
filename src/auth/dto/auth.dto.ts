@@ -11,4 +11,8 @@ export class AuthDto {
   @IsString()
   @IsNotEmpty()
   password: string;
+
+  constructor(partial: Partial<AuthDto>) {
+    Object.assign(this, partial);
+  }
 }

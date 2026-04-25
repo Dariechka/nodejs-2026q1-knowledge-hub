@@ -51,4 +51,8 @@ export class CreateUpdateArticleDto {
   @IsArray()
   @IsString({ each: true })
   tags?: string[];
+
+  constructor(partial: Partial<CreateUpdateArticleDto>) {
+    Object.assign(this, partial);
+  }
 }

@@ -5,4 +5,8 @@ export class RefreshDto {
   @ApiProperty({ description: 'The refresh token string' })
   @IsOptional()
   refreshToken: string;
+
+  constructor(partial: Partial<RefreshDto>) {
+    Object.assign(this, partial);
+  }
 }

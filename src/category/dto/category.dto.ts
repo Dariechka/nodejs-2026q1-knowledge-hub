@@ -22,4 +22,8 @@ export class CategoryDto implements CreateCategory {
   @IsString()
   @IsNotEmpty()
   description: string;
+
+  constructor(partial: Partial<CategoryDto>) {
+    Object.assign(this, partial);
+  }
 }

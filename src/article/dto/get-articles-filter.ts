@@ -32,4 +32,8 @@ export class GetArticlesFilterDto {
   @IsOptional()
   @IsString()
   tag?: string;
+
+  constructor(partial: Partial<GetArticlesFilterDto>) {
+    Object.assign(this, partial);
+  }
 }

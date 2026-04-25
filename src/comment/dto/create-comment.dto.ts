@@ -26,4 +26,8 @@ export class CreateCommentDto {
   @IsOptional()
   @IsUUID('4')
   authorId: string | null;
+
+  constructor(partial: Partial<CreateCommentDto>) {
+    Object.assign(this, partial);
+  }
 }
