@@ -165,7 +165,7 @@ describe('ArticleService', () => {
       ).rejects.toThrow(ForbiddenError);
     });
 
-    it('should forbid editor updating чужой article', async () => {
+    it('should forbid editor updating foreign article', async () => {
       vi.spyOn(service, 'findOne').mockResolvedValue({
         id: '1',
         authorId: '2',
