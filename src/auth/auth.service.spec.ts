@@ -31,11 +31,6 @@ describe('AuthService', () => {
     verifyAsync: vi.fn(),
   };
 
-  const adminUser = { role: 'admin', userId: '1' };
-  const editorUser = { role: 'editor', userId: '2' };
-  const otherEditor = { role: 'editor', userId: '999' };
-  const viewerUser = { role: 'viewer', userId: '3' };
-
   beforeEach(() => {
     vi.clearAllMocks();
     service = new AuthService(userService as any, jwtService as any);
