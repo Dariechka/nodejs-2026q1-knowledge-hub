@@ -134,7 +134,7 @@ describe('ArticleService', () => {
   });
 
   describe('findAll', () => {
-    it('should call prisma.findAll', async () => {
+    it('should call prisma.findMany', async () => {
       prismaMock.article.findMany.mockResolvedValue([]);
 
       await service.findAll({} as any, {} as any, {} as any);
