@@ -56,6 +56,18 @@ describe('UsersService', () => {
       expect(result.id).toEqual('1');
     });
 
+    it('should strip out password from user response', async () => {
+      prismaMock.user.findUnique.mockResolvedValue({
+        id: '1',
+        password: 'password',
+      });
+
+      const result = await service.findOne('1');
+
+      expect(result.id).toEqual('1');
+      expect(result.password).toBeUndefined();
+    });
+
     it('should throw if user not found', async () => {
       prismaMock.user.findUnique.mockResolvedValue(null);
 

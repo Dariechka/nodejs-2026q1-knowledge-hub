@@ -18,7 +18,7 @@ describe('UserDto', () => {
     expect(dto.id).toBe('1');
     expect(dto.login).toBe('john456');
     expect(dto.role).toBe('editor');
-    expect(dto.password).toBe('secret');
+    expect(dto.password).toBeUndefined();
     expect(dto.createdAt).toEqual(date);
     expect(dto.updatedAt).toEqual(date);
   });

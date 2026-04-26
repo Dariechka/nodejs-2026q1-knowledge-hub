@@ -16,5 +16,6 @@ export class UserDto {
 
   constructor(partial: Partial<UserDto>) {
     Object.assign(this, partial);
+    this.password = undefined;
   }
 }
