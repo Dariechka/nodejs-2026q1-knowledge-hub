@@ -8,7 +8,7 @@ import {
 } from './utils';
 
 describe('Users Additional Tests', () => {
-  const unauthorizedRequest = request;
+  const authorizedRequest = request;
   let mockUserId: string | undefined;
   const commonHeaders = { Accept: 'application/json' };
   const newUserDto = {
@@ -18,7 +18,7 @@ describe('Users Additional Tests', () => {
 
   beforeAll(async () => {
     if (shouldAuthorizationBeTested) {
-      const result = await getTokenAndUserId(unauthorizedRequest);
+      const result = await getTokenAndUserId(authorizedRequest);
       commonHeaders['Authorization'] = result.token;
       mockUserId = result.mockUserId;
     }
@@ -26,7 +26,7 @@ describe('Users Additional Tests', () => {
 
   afterAll(async () => {
     if (mockUserId) {
-      await removeTokenUser(unauthorizedRequest, mockUserId, commonHeaders);
+      await removeTokenUser(authorizedRequest, mockUserId, commonHeaders);
     }
 
     if (commonHeaders['Authorization']) {
@@ -35,7 +35,7 @@ describe('Users Additional Tests', () => {
   });
 
   it('should reject update if old password is incorrect', async () => {
-    const createResponse = await unauthorizedRequest
+    const createResponse = await authorizedRequest
       .post(usersRoutes.create)
       .set(commonHeaders)
       .send(newUserDto);
@@ -44,7 +44,7 @@ describe('Users Additional Tests', () => {
     expect(createResponse.statusCode).toBe(StatusCodes.CREATED);
 
     // Attempt update with wrong old password
-    const updateResponse = await unauthorizedRequest
+    const updateResponse = await authorizedRequest
       .put(usersRoutes.update(id))
       .set(commonHeaders)
       .send({ oldPassword: 'WRONG', newPassword: 'NEW_PASSWORD' });
@@ -53,7 +53,7 @@ describe('Users Additional Tests', () => {
     expect(updateResponse.body.message).toMatch('Old password is incorrect');
 
     // Cleanup
-    const cleanupResponse = await unauthorizedRequest
+    const cleanupResponse = await authorizedRequest
       .delete(usersRoutes.delete(id))
       .set(commonHeaders);
 
@@ -66,7 +66,7 @@ describe('Users Additional Tests', () => {
       password: 'TEMP_PASS',
     };
 
-    const createResponse = await unauthorizedRequest
+    const createResponse = await authorizedRequest
       .post(usersRoutes.create)
       .set(commonHeaders)
       .send(createUserDto);
@@ -74,16 +74,41 @@ describe('Users Additional Tests', () => {
     expect(createResponse.status).toBe(StatusCodes.CREATED);
     const { id } = createResponse.body;
 
-    const deleteResponse = await unauthorizedRequest
+    const deleteResponse = await authorizedRequest
       .delete(usersRoutes.delete(id))
       .set(commonHeaders);
 
     expect(deleteResponse.status).toBe(StatusCodes.NO_CONTENT);
 
-    const getResponse = await unauthorizedRequest
+    const getResponse = await authorizedRequest
       .get(usersRoutes.getById(id))
       .set(commonHeaders);
 
     expect(getResponse.status).toBe(StatusCodes.NOT_FOUND);
+  });
+
+  it('should stip out password from user response', async () => {
+    const createUserDto = {
+      login: 'TEMP_USER',
+      password: 'TEMP_PASS',
+    };
+
+    const createResponse = await authorizedRequest
+      .post(usersRoutes.create)
+      .set(commonHeaders)
+      .send(createUserDto);
+
+    expect(createResponse.status).toBe(StatusCodes.CREATED);
+    const user = createResponse.body;
+
+    expect(user.id).toBeDefined();
+    expect(user.login).toEqual('TEMP_USER');
+    expect(user.password).toBeUndefined();
+
+    const deleteResponse = await authorizedRequest
+      .delete(usersRoutes.delete(user.id))
+      .set(commonHeaders);
+
+    expect(deleteResponse.status).toBe(StatusCodes.NO_CONTENT);
   });
 });
