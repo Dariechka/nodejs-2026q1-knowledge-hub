@@ -5,6 +5,44 @@ This project is a REST API built with **NestJS** as part of the RS School Node.j
 It implements full CRUD functionality for core entities such as **Users, Articles, Categories, and Comments**, includes **OpenAPI (Swagger) documentation**, and is covered with **end-to-end tests**.
 
 ---
+
+## Logging
+
+The application uses log file rotation with a configurable maximum file size.
+
+- Log rotation is enabled and controlled via the `LOG_MAX_FILE_SIZE` environment variable.
+- When a log file reaches the configured size limit, a new file is automatically created.
+
+### Environment Variables
+
+| Variable              | Description                         | Example    |
+|----------------------|-------------------------------------|------------|
+| `LOG_MAX_FILE_SIZE`  | Maximum size of a single log file   | `1024`      |
+
+---
+
+## Logging Behavior
+
+### Development Mode
+- Logs are printed directly to the console.
+- Useful for fast debugging and local development.
+
+### Production Mode
+- Logs are written to files instead of the console.
+- Log files are automatically rotated based on `LOG_MAX_FILE_SIZE`.
+
+---
+
+## Running in Production Mode
+
+To test file-based logging with rotation:
+
+```bash
+docker-compose up --build
+npm run start:prod
+```
+
+---
 ## Docker Setup
 
 This application is fully containerized using Docker and Docker Compose, making it easy to run in any environment.
