@@ -9,4 +9,8 @@ export class GetCommentFilterDto {
   @IsNotEmpty()
   @IsUUID('4')
   articleId: string;
+
+  constructor(partial: Partial<GetCommentFilterDto>) {
+    Object.assign(this, partial);
+  }
 }

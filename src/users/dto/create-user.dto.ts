@@ -25,4 +25,8 @@ export class CreateUserDto implements CreateUser {
   @IsOptional()
   @IsIn(['admin', 'editor', 'viewer'])
   role?: 'admin' | 'editor' | 'viewer';
+
+  constructor(partial: Partial<CreateUserDto>) {
+    Object.assign(this, partial);
+  }
 }

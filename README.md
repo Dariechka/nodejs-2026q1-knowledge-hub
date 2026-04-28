@@ -6,6 +6,160 @@ It implements full CRUD functionality for core entities such as **Users, Article
 
 ---
 
+## Logging
+
+The application uses log file rotation with a configurable maximum file size.
+
+- Log rotation is enabled and controlled via the `LOG_MAX_FILE_SIZE` environment variable.
+- When a log file reaches the configured size limit, a new file is automatically created.
+
+### Environment Variables
+
+| Variable              | Description                         | Example    |
+|----------------------|-------------------------------------|------------|
+| `LOG_MAX_FILE_SIZE`  | Maximum size of a single log file   | `1024`      |
+
+---
+
+## Logging Behavior
+
+### Development Mode
+- Logs are printed directly to the console.
+- Useful for fast debugging and local development.
+
+### Production Mode
+- Logs are written to files instead of the console.
+- Log files are automatically rotated based on `LOG_MAX_FILE_SIZE`.
+
+---
+
+## Running in Production Mode
+
+To test file-based logging with rotation:
+
+```bash
+docker-compose up --build
+npm run start:prod
+```
+
+---
+## Docker Setup
+
+This application is fully containerized using Docker and Docker Compose, making it easy to run in any environment.
+
+## Docker Image
+
+The application image is available on Docker Hub:
+
+https://hub.docker.com/r/dariechka/nodejs-2026q1-knowledge-hub-app
+
+You can pull and run it directly:
+
+```bash
+docker pull dariechka/nodejs-2026q1-knowledge-hub-app:latest
+docker run -p 4000:4000 dariechka/nodejs-2026q1-knowledge-hub-app:latest
+```
+
+## Dockerfile
+
+The `Dockerfile` defines how the application image is built.
+
+### Key features:
+
+* Uses a **multi-stage build**:
+
+  * **Builder stage** – installs dependencies and builds the application
+  * **Production stage** – includes only compiled code and production dependencies
+* Based on a lightweight image (`node:24-alpine`)
+* Sets environment variables:
+
+  * `NODE_ENV=production`
+  * `PORT=4000`
+* Runs the app as a **non-root user (`node`)** for better security
+* Exposes port `4000`
+
+
+## .dockerignore
+
+The `.dockerignore` file prevents unnecessary files from being included in the Docker image.
+
+### Typical ignored files:
+
+* `node_modules`
+* `dist` (if rebuilt inside container)
+* `.git`
+* logs and temporary files
+
+This helps:
+
+* Reduce image size
+* Speed up builds
+* Improve security
+
+
+## Docker Compose
+
+The `docker-compose.yml` file defines and runs the full application stack.
+
+### Services
+
+#### app (NestJS API)
+
+* Built from the local `Dockerfile`
+* Runs on port `4000`
+* Uses environment variables from `.env`
+* Depends on the database service
+* Includes a health check
+* Restart policy: `on-failure`
+
+---
+
+#### db (PostgreSQL)
+
+* Uses `postgres:16-alpine`
+* Configured via environment variables:
+
+  * `POSTGRES_USER`
+  * `POSTGRES_PASSWORD`
+  * `POSTGRES_DB`
+* Exposes port `5432`
+* Stores data in a **named volume**
+* Restart policy: `unless-stopped`
+* Includes a health check using `pg_isready`
+
+#### adminer
+
+* Lightweight database UI
+* Available only in **debug profile**
+* Runs on port `8080`
+
+## ▶️ Running the Application
+
+```bash
+docker-compose up --build
+```
+
+### Run with Adminer (debug mode):
+
+```bash
+docker compose --profile debug up
+```
+
+## Access
+
+* API: http://localhost:4000
+* Adminer (debug): http://localhost:8080
+
+---
+
+## Security
+
+* Application runs as a **non-root user**
+* Uses minimal base image for reduced attack surface
+
+---
+
+
 ## Features
 
 * RESTful API with proper HTTP methods and status codes

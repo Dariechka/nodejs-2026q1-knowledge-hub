@@ -9,9 +9,10 @@ import {
   Post,
   Put,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { ArticleService } from './article.service';
-import { ArticleDto } from './dto/article-dto';
+import { CreateUpdateArticleDto } from './dto/create-update-article-dto';
 import {
   ApiBody,
   ApiOperation,
@@ -21,6 +22,9 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { SearchArticleDto } from '../users/dto/article-search.dto';
+import { JwtAuthGuard } from '../auth/guard/jwt.guard';
+import { CurrentUser } from '../auth/decorator/current-user.decorator';
+import type { CurrentUserData } from '../auth/data/current-user.data';
 
 @ApiTags('article')
 @Controller('article')
@@ -28,18 +32,23 @@ export class ArticleController {
   constructor(private readonly articleService: ArticleService) {}
 
   @Post()
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Create article' })
-  @ApiBody({ type: ArticleDto })
+  @ApiBody({ type: CreateUpdateArticleDto })
   @ApiResponse({ status: 201, description: 'Article created' })
   @ApiResponse({
     status: 400,
     description: 'Required fields should not be empty',
   })
-  create(@Body() articleDto: ArticleDto) {
-    return this.articleService.create(articleDto);
+  create(
+    @CurrentUser() user: CurrentUserData,
+    @Body() articleDto: CreateUpdateArticleDto,
+  ) {
+    return this.articleService.create(user, articleDto);
   }
 
   @Get()
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Get all articles with filters' })
   @ApiResponse({ status: 200, description: 'List of articles' })
   @ApiQuery({
@@ -54,6 +63,7 @@ export class ArticleController {
   }
 
   @Get(':id')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Get article by ID' })
   @ApiParam({
     name: 'id',
@@ -71,6 +81,7 @@ export class ArticleController {
   }
 
   @Put(':id')
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Update article by ID' })
   @ApiParam({
     name: 'id',
@@ -78,35 +89,31 @@ export class ArticleController {
     format: 'uuid',
     description: 'Article ID',
   })
-  @ApiBody({ type: ArticleDto })
+  @ApiBody({ type: CreateUpdateArticleDto })
   @ApiResponse({ status: 200, description: 'Article updated' })
   @ApiResponse({ status: 404, description: 'Article with ID not found' })
-  @ApiResponse({
-    status: 400,
-    description: 'Validation failed (uuid is expected)',
-  })
   update(
+    @CurrentUser() user: CurrentUserData,
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() articleDto: ArticleDto,
+    @Body() articleDto: CreateUpdateArticleDto,
   ) {
-    return this.articleService.update(id, articleDto);
+    return this.articleService.update(user, id, articleDto);
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard)
   @HttpCode(204)
   @ApiOperation({ summary: 'Delete article' })
-  @ApiParam({
-    name: 'id',
-    type: 'string',
-    format: 'uuid',
-  })
   @ApiResponse({ status: 204, description: 'Article deleted' })
   @ApiResponse({ status: 404, description: 'Article with ID not found' })
   @ApiResponse({
     status: 400,
     description: 'Validation failed (uuid is expected)',
   })
-  remove(@Param('id', ParseUUIDPipe) id: string) {
-    return this.articleService.remove(id);
+  remove(
+    @CurrentUser() user: CurrentUserData,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.articleService.remove(user, id);
   }
 }

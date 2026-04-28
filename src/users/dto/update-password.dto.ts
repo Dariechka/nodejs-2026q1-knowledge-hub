@@ -16,4 +16,8 @@ export class UpdatePasswordDto implements UpdatePassword {
   @IsString()
   @IsNotEmpty()
   readonly newPassword: string;
+
+  constructor(partial: Partial<UpdatePasswordDto>) {
+    Object.assign(this, partial);
+  }
 }

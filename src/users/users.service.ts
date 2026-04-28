@@ -1,74 +1,83 @@
-import {
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdatePasswordDto } from './dto/update-password.dto';
-import { randomUUID } from 'node:crypto';
-import type { User } from './entities/user.entity';
-import { UsersStorage } from '../shared/users.storage';
-import { CommentStorage } from '../shared/comment.storage';
-import { ArticleStorage } from '../shared/article.storage';
 import { Pagination } from '../shared/dto/pagination';
 import { Sorting } from '../shared/dto/sorting';
+import { PrismaService } from '../prisma/prisma.service';
+import { toPrismaPagination, toPrismaSorting } from '../shared/utils';
+import { UserDto } from './dto/user.dto';
+import {
+  ForbiddenError,
+  NotFoundError,
+} from '../shared/error/knowledge-hub-errors';
 
 @Injectable()
 export class UsersService {
-  constructor(
-    private readonly usersStorage: UsersStorage,
-    private readonly articleStorage: ArticleStorage,
-    private readonly commentStorage: CommentStorage,
-  ) {}
+  constructor(private readonly prismaService: PrismaService) {}
 
-  create(createUserDto: CreateUserDto) {
-    const timestamp = Date.now();
-    const user: User = {
-      ...createUserDto,
-      role: createUserDto.role ?? 'viewer',
-      id: randomUUID().toString(),
-      createdAt: timestamp,
-      updatedAt: timestamp,
-    };
-    this.usersStorage.create(user);
-    return { ...user, password: undefined };
+  async create(createUserDto: CreateUserDto): Promise<UserDto> {
+    const user = await this.prismaService.user.create({
+      data: createUserDto,
+    });
+    return new UserDto(user);
   }
 
-  findAll(pagination: Pagination, sorting: Sorting) {
-    return this.usersStorage.findAll(pagination, sorting);
+  async findAll(pagination: Pagination, sorting: Sorting): Promise<UserDto[]> {
+    return (
+      await this.prismaService.user.findMany({
+        ...toPrismaPagination(pagination),
+        ...toPrismaSorting(sorting),
+      })
+    ).map((user) => new UserDto(user));
   }
 
-  findOne(id: string) {
-    const user: User | undefined = this.usersStorage.findOne(id);
+  async findOne(id: string): Promise<UserDto> {
+    const user = await this.prismaService.user.findUnique({
+      where: { id },
+    });
     if (!user) {
-      throw new NotFoundException(`User with ID ${id} not found`);
+      throw new NotFoundError(`User with ID ${id} not found`);
     }
-    return user;
+    return new UserDto(user);
   }
 
-  update(id: string, updatePasswordDto: UpdatePasswordDto) {
-    const user = this.usersStorage.findOne(id);
-
+  async findByLogin(login: string): Promise<UserDto> {
+    const user = await this.prismaService.user.findUnique({
+      where: { login },
+    });
     if (!user) {
-      throw new NotFoundException(`User with ID ${id} not found`);
+      throw new NotFoundError(`User with login ${login} not found`);
     }
-    if (user.password !== updatePasswordDto.oldPassword) {
-      throw new ForbiddenException('Old password is incorrect');
-    }
-
-    return {
-      ...this.usersStorage.update(id, updatePasswordDto),
-      password: undefined,
-    };
+    return new UserDto(user);
   }
 
-  remove(id: string) {
-    const wasDeleted = this.usersStorage.remove(id);
-    if (!wasDeleted) {
-      throw new NotFoundException(`User with ID ${id} not found`);
+  async update(
+    id: string,
+    updatePasswordDto: UpdatePasswordDto,
+  ): Promise<UserDto> {
+    const user = await this.prismaService.user.findUnique({
+      where: { id },
+    });
+    if (!user) {
+      throw new NotFoundError(`User with ID ${id} not found`);
     }
-    this.commentStorage.removeByUserId(id);
-    this.articleStorage.removeAuthor(id);
-    return wasDeleted;
+
+    if (updatePasswordDto.oldPassword !== user.password) {
+      throw new ForbiddenError('Old password is incorrect');
+    }
+
+    const newUser = await this.prismaService.user.update({
+      where: { id },
+      data: { password: { set: updatePasswordDto.newPassword } },
+    });
+    return new UserDto(newUser);
+  }
+
+  async remove(id: string) {
+    try {
+      await this.prismaService.user.delete({ where: { id } });
+    } catch {
+      throw new NotFoundError(`User with ID ${id} not found`);
+    }
   }
 }
