@@ -4,6 +4,8 @@ import { createSummarizeArticlePrompt } from './prompt/summarization.prompt';
 import { firstValueFrom } from 'rxjs';
 import { MaxLength } from './dto/summarize-article-dto';
 import { translateArticlePrompt } from './prompt/translatearticle.prompt';
+import type { Task } from './dto/analyze-article-dto';
+import { analyzation } from './prompt/analyzation.prompt';
 
 @Injectable()
 export class GeminiService {
@@ -57,6 +59,28 @@ export class GeminiService {
       const rawContent = response.data.candidates[0].content.parts[0].text;
       const cleanJson = rawContent.replace(/```json|```/g, '').trim();
       return JSON.parse(cleanJson);
+    } catch (error) {
+      this.logger.error(
+        'Gemini Error: ' + (error.response?.data || error.message),
+        error,
+      );
+    }
+  }
+
+  async analyzeArticle(content: string, task: Task) {
+    const prompt = analyzation(content, task);
+    try {
+      const response = await firstValueFrom(
+        this.httpService.post(this.url, {
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            responseMimeType: 'application/json',
+          },
+        }),
+      );
+
+      const rawText = response.data.candidates[0].content.parts[0].text;
+      return JSON.parse(rawText);
     } catch (error) {
       this.logger.error(
         'Gemini Error: ' + (error.response?.data || error.message),

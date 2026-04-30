@@ -14,6 +14,8 @@ import { SummarizeArticleDto } from './dto/summarize-article-dto';
 import { SummarizeArticleResponse } from './dto/summarize-article-response-dto';
 import { TranslateArticleDto } from './dto/translate-article-dto';
 import { TranslateArticleResponse } from './dto/translate-article-response-dto';
+import { AnalyzeArticleDto } from './dto/analyze-article-dto';
+import type { AnalyzeArticleResponse } from './dto/analyze-article-response-dto';
 
 @ApiTags('ai/articles')
 @Controller('ai/articles')
@@ -86,5 +88,36 @@ export class AiController {
       translatedText: result.translatedText,
       detectedLanguage: result.detectedLanguage,
     } satisfies TranslateArticleResponse;
+  }
+
+  @Post(':articleId/analyze')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Analyze article' })
+  @ApiBody({ type: SummarizeArticleDto })
+  @ApiResponse({ status: 200, description: 'Analyze is created' })
+  @ApiResponse({
+    status: 404,
+    description: 'Article does not exist',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Validation failed (uuid is expected)',
+  })
+  async analyze(
+    @Param('articleId', new ParseUUIDPipe({ version: '4' })) articleId: string,
+    @Body() analyzeDto: AnalyzeArticleDto,
+  ): Promise<AnalyzeArticleResponse> {
+    const article = await this.articleService.findOne(articleId);
+    const result = await this.geminiService.analyzeArticle(
+      article.content,
+      analyzeDto.task,
+    );
+
+    return {
+      articleId: article.id,
+      analysis: result.analysis,
+      suggestions: result.suggestions,
+      severity: result.severity,
+    } satisfies AnalyzeArticleResponse;
   }
 }

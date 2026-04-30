@@ -1,7 +1,7 @@
 export const translateArticlePrompt = (
   content: string,
   targetLanguage: string,
-  sourceLanguage?: string
+  sourceLanguage?: string,
 ) => {
   const sourceContext = sourceLanguage
     ? `The original text is in ${sourceLanguage}.`
