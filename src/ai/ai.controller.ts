@@ -15,7 +15,7 @@ import { SummarizeArticleResponse } from './dto/summarize-article-response-dto';
 import { TranslateArticleDto } from './dto/translate-article-dto';
 import { TranslateArticleResponse } from './dto/translate-article-response-dto';
 import { AnalyzeArticleDto } from './dto/analyze-article-dto';
-import type { AnalyzeArticleResponse } from './dto/analyze-article-response-dto';
+import { AnalyzeArticleResponse } from './dto/analyze-article-response-dto';
 
 @ApiTags('ai/articles')
 @Controller('ai/articles')

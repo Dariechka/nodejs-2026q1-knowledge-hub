@@ -41,3 +41,17 @@ export class UnprocessableError extends KnowledgeHubError {
     super(StatusCodes.UNPROCESSABLE_ENTITY, message);
   }
 }
+
+export class TooManyRequestError extends KnowledgeHubError {
+  constructor(message: string = 'AI service is currently overloaded.') {
+    super(StatusCodes.TOO_MANY_REQUESTS, message);
+  }
+}
+
+export class ServerUnavailableError extends KnowledgeHubError {
+  constructor(
+    message: string = 'The server was unable to complete your request. Please try again later',
+  ) {
+    super(StatusCodes.SERVICE_UNAVAILABLE, message);
+  }
+}

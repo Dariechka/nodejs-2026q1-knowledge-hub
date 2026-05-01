@@ -1,11 +1,23 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { createSummarizeArticlePrompt } from './prompt/summarization.prompt';
-import { firstValueFrom } from 'rxjs';
+import {
+  catchError,
+  firstValueFrom,
+  map,
+  retry,
+  throwError,
+  timer,
+} from 'rxjs';
 import { MaxLength } from './dto/summarize-article-dto';
 import { translateArticlePrompt } from './prompt/translatearticle.prompt';
 import type { Task } from './dto/analyze-article-dto';
 import { analyzation } from './prompt/analyzation.prompt';
+import { StatusCodes } from 'http-status-codes';
+import {
+  ServerUnavailableError,
+  TooManyRequestError,
+} from '../shared/error/knowledge-hub-errors';
 
 @Injectable()
 export class GeminiService {
@@ -20,20 +32,45 @@ export class GeminiService {
   async fetchSummary(content: string, maxLength: MaxLength) {
     const prompt = createSummarizeArticlePrompt(content, maxLength);
 
-    try {
-      const { data } = await firstValueFrom(
-        this.httpService.post(this.url, {
-          contents: [{ parts: [{ text: prompt }] }],
+    const result$ = this.httpService
+      .post(this.url, {
+        contents: [{ parts: [{ text: prompt }] }],
+      })
+      .pipe(
+        retry({
+          count: 3,
+          delay: (_, retryCount) => {
+            const backoffTime = Math.pow(2, retryCount - 1) * 1000;
+            this.logger.debug(
+              `Attempt ${retryCount} failed. Retrying in ${backoffTime}ms...`,
+            );
+            return timer(backoffTime);
+          },
+        }),
+        map((res) => JSON.parse(res.data.candidates[0].content.parts[0].text)),
+        catchError((err) => {
+          const status = err.response?.statuse;
+
+          if (
+            status === StatusCodes.TOO_MANY_REQUESTS ||
+            (status >= StatusCodes.INTERNAL_SERVER_ERROR &&
+              status <= StatusCodes.GATEWAY_TIMEOUT)
+          ) {
+            return throwError(() => new TooManyRequestError());
+          }
+
+          if (
+            status === StatusCodes.UNAUTHORIZED ||
+            status === StatusCodes.FORBIDDEN
+          ) {
+            this.logger.error('Gemini Auth Error: Check your API Key.');
+            return throwError(() => new ServerUnavailableError());
+          }
+
+          return throwError(() => new ServerUnavailableError());
         }),
       );
-
-      return data.candidates[0].content.parts[0].text;
-    } catch (error) {
-      this.logger.error(
-        'Gemini Error: ' + (error.response?.data || error.message),
-        error,
-      );
-    }
+    return firstValueFrom(result$);
   }
 
   async translateArticle(
@@ -55,15 +92,17 @@ export class GeminiService {
           },
         }),
       );
-
       const rawContent = response.data.candidates[0].content.parts[0].text;
       const cleanJson = rawContent.replace(/```json|```/g, '').trim();
+      console.log(cleanJson);
       return JSON.parse(cleanJson);
     } catch (error) {
       this.logger.error(
-        'Gemini Error: ' + (error.response?.data || error.message),
+        'Gemini Error: ' +
+          (JSON.stringify(error.response?.data) + ' ' + error.message),
         error,
       );
+      throw error;
     }
   }
 

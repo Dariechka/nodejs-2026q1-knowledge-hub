@@ -8,6 +8,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { ConfigModule } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
 import { configureLoggingModule } from './shared/logging';
+import { AiModule } from './ai/ai.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { configureLoggingModule } from './shared/logging';
     SharedModule,
     PrismaModule,
     AuthModule,
+    AiModule,
     configureLoggingModule(),
     ConfigModule.forRoot({
       isGlobal: true,

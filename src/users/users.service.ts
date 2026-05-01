@@ -10,6 +10,7 @@ import {
   ForbiddenError,
   NotFoundError,
 } from '../shared/error/knowledge-hub-errors';
+import type { User } from '@prisma/client';
 
 @Injectable()
 export class UsersService {
@@ -41,14 +42,14 @@ export class UsersService {
     return new UserDto(user);
   }
 
-  async findByLogin(login: string): Promise<UserDto> {
+  async findByLogin(login: string): Promise<User> {
     const user = await this.prismaService.user.findUnique({
       where: { login },
     });
     if (!user) {
       throw new NotFoundError(`User with login ${login} not found`);
     }
-    return new UserDto(user);
+    return user;
   }
 
   async update(

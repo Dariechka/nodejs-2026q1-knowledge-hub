@@ -62,7 +62,16 @@ export const toPrismaSorting = (
 
 type AnyObject = Record<string, any>;
 
-const SENSITIVE_KEYS = ['password', 'token'];
+const SENSITIVE_KEYS = [
+  'password',
+  'token',
+  'apiKey',
+  'api_key',
+  'authorization',
+  'auth',
+  'secret',
+  'clientSecret',
+];
 
 const isSensitiveKey = (key: string): boolean => {
   const lower = key.toLowerCase();
