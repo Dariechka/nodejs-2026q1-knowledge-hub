@@ -18,12 +18,15 @@ import { TranslateArticleResponse } from './dto/translate-article-response-dto';
 import { AnalyzeArticleDto } from './dto/analyze-article-dto';
 import { AnalyzeArticleResponse } from './dto/analyze-article-response-dto';
 import { ThrottlerGuard } from '@nestjs/throttler';
+import { createCacheKey } from '../shared/utils';
+import { AiCacheService } from './ai.cash.service';
 
 @ApiTags('ai/articles')
 @UseGuards(ThrottlerGuard)
 @Controller('ai/articles')
 export class AiController {
   constructor(
+    private readonly cache: AiCacheService,
     private readonly geminiService: GeminiService,
     private readonly articleService: ArticleService,
   ) {}
@@ -46,10 +49,26 @@ export class AiController {
     @Body() summarizeDto: SummarizeArticleDto,
   ): Promise<SummarizeArticleResponse> {
     const article = await this.articleService.findOne(articleId);
+    const key = createCacheKey({
+      articleId,
+      params: summarizeDto,
+    });
+
+    const cached = this.cache.get<string>(key);
+    if (cached) {
+      return {
+        articleId: article.id,
+        summary: cached,
+        originalLength: article.content.length,
+        summaryLength: cached.length,
+      } satisfies SummarizeArticleResponse;
+    }
+
     const summary = await this.geminiService.fetchSummary(
       article.content,
       summarizeDto.maxLength,
     );
+    this.cache.set(key, summary);
 
     return {
       articleId: article.id,
@@ -80,11 +99,31 @@ export class AiController {
     @Body() translateDto: TranslateArticleDto,
   ): Promise<TranslateArticleResponse> {
     const article = await this.articleService.findOne(articleId);
+    const parameters = Object.keys(translateDto)
+      .sort()
+      .reduce((acc, key) => {
+        acc[key] = translateDto[key];
+        return acc;
+      }, {});
+    const key = createCacheKey({
+      articleId,
+      params: parameters,
+    });
+    const cached: TranslateArticleResponse = this.cache.get(key);
+    if (cached) {
+      return {
+        articleId: article.id,
+        translatedText: cached.translatedText,
+        detectedLanguage: cached.detectedLanguage,
+      } satisfies TranslateArticleResponse;
+    }
+
     const result = await this.geminiService.translateArticle(
       article.content,
       translateDto.targetLanguage,
       translateDto.sourceLanguage,
     );
+    this.cache.set(key, result);
 
     return {
       articleId: article.id,

@@ -100,3 +100,13 @@ export const sanitize = <T = any>(input: T): T => {
 
   return input;
 };
+
+export function createCacheKey({
+  articleId,
+  params,
+}: {
+  articleId: string;
+  params: Record<string, any>;
+}) {
+  return ['gemini', articleId, JSON.stringify(params)].join(':');
+}

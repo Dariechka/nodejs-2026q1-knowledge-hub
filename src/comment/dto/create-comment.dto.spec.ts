@@ -12,7 +12,6 @@ describe('CreateCommentDto', () => {
         authorId: '8bef8474-1842-42c1-9ca4-4297ac0a40d2',
       }),
     );
-    console.log(errors);
     expect(errors.length).toBe(0);
   });
 
