@@ -15,6 +15,7 @@ import type { Task } from './dto/analyze-article-dto';
 import { analyzation } from './prompt/analyzation.prompt';
 import { StatusCodes } from 'http-status-codes';
 import {
+  InternalServerError,
   ServerUnavailableError,
   TooManyRequestError,
 } from '../shared/error/knowledge-hub-errors';
@@ -47,27 +48,32 @@ export class GeminiService {
             return timer(backoffTime);
           },
         }),
-        map((res) => JSON.parse(res.data.candidates[0].content.parts[0].text)),
+        map((res) => res.data.candidates[0].content.parts[0].text),
         catchError((err) => {
-          const status = err.response?.statuse;
+          const status = err.status;
 
           if (
-            status === StatusCodes.TOO_MANY_REQUESTS ||
-            (status >= StatusCodes.INTERNAL_SERVER_ERROR &&
-              status <= StatusCodes.GATEWAY_TIMEOUT)
+            [StatusCodes.UNAUTHORIZED, StatusCodes.FORBIDDEN].includes(status)
           ) {
-            return throwError(() => new TooManyRequestError());
+            this.logger.error('Gemini Auth Error: Check your API Key.', err);
+            return throwError(() => new InternalServerError());
           }
 
           if (
-            status === StatusCodes.UNAUTHORIZED ||
-            status === StatusCodes.FORBIDDEN
+            [
+              StatusCodes.BAD_GATEWAY,
+              StatusCodes.SERVICE_UNAVAILABLE,
+              StatusCodes.GATEWAY_TIMEOUT,
+            ].includes(status)
           ) {
-            this.logger.error('Gemini Auth Error: Check your API Key.');
             return throwError(() => new ServerUnavailableError());
           }
 
-          return throwError(() => new ServerUnavailableError());
+          if ([StatusCodes.TOO_MANY_REQUESTS].includes(status)) {
+            return throwError(() => new ServerUnavailableError());
+          }
+
+          return throwError(() => new InternalServerError());
         }),
       );
     return firstValueFrom(result$);

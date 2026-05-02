@@ -55,3 +55,11 @@ export class ServerUnavailableError extends KnowledgeHubError {
     super(StatusCodes.SERVICE_UNAVAILABLE, message);
   }
 }
+
+export class InternalServerError extends KnowledgeHubError {
+  constructor(
+    message: string = 'The server was unable to complete your request.',
+  ) {
+    super(StatusCodes.INTERNAL_SERVER_ERROR, message);
+  }
+}
