@@ -7,6 +7,7 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
+  UseGuards,
 } from '@nestjs/common';
 import { ArticleService } from '../article/article.service';
 import { GeminiService } from './gemini.service';
@@ -16,8 +17,10 @@ import { TranslateArticleDto } from './dto/translate-article-dto';
 import { TranslateArticleResponse } from './dto/translate-article-response-dto';
 import { AnalyzeArticleDto } from './dto/analyze-article-dto';
 import { AnalyzeArticleResponse } from './dto/analyze-article-response-dto';
+import { ThrottlerGuard } from '@nestjs/throttler';
 
 @ApiTags('ai/articles')
+@UseGuards(ThrottlerGuard)
 @Controller('ai/articles')
 export class AiController {
   constructor(

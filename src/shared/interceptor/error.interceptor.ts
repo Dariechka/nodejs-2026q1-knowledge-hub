@@ -10,6 +10,7 @@ import {
 import { catchError, Observable, of } from 'rxjs';
 import { KnowledgeHubError } from '../error/knowledge-hub-errors';
 import { Response } from 'express';
+import { ThrottlerException } from '@nestjs/throttler';
 
 @Injectable()
 export class ErrorInterceptor implements NestInterceptor {
@@ -29,6 +30,10 @@ export class ErrorInterceptor implements NestInterceptor {
           status = error.statusCode;
           message = error.message;
           errorText = error.name;
+        } else if (error instanceof ThrottlerException) {
+          status = 429;
+          message = 'Too many requests, please try again later';
+          errorText = 'RATE_LIMIT_EXCEEDED';
         } else if (error instanceof HttpException) {
           status = error.getStatus();
           message = error.message;
