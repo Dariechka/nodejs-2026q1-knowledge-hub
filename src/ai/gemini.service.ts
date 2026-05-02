@@ -18,6 +18,7 @@ import {
   InternalServerError,
   ServerUnavailableError,
 } from '../shared/error/knowledge-hub-errors';
+import { AiEndpoint, AiMetricsService } from './ai.metrics.service';
 
 @Injectable()
 export class GeminiService {
@@ -27,7 +28,10 @@ export class GeminiService {
   private readonly model: string = process.env.GEMINI_MODEL;
   private readonly url: string = `${this.baseUrl}/${this.model}:generateContent?key=${this.apiKey}`;
 
-  constructor(private readonly httpService: HttpService) {}
+  constructor(
+    private readonly httpService: HttpService,
+    private readonly metrics: AiMetricsService,
+  ) {}
 
   async fetchSummary(content: string, maxLength: MaxLength) {
     const prompt = createSummarizeArticlePrompt(content, maxLength);
@@ -41,7 +45,11 @@ export class GeminiService {
           count: 3,
           delay: (err, retryCount) => this.delay(err, retryCount),
         }),
-        map((res) => res.data.candidates[0].content.parts[0].text),
+        map((res) => {
+          const tokens = res.data?.usageMetadata?.totalTokenCount;
+          this.metrics.track(AiEndpoint.SUMMARIZE, tokens);
+          return res.data.candidates[0].content.parts[0].text;
+        }),
         catchError((err) => this.catchError(err)),
       );
     return firstValueFrom(result$);
@@ -70,7 +78,11 @@ export class GeminiService {
           count: 3,
           delay: (err, retryCount) => this.delay(err, retryCount),
         }),
-        map((res) => JSON.parse(res.data.candidates[0].content.parts[0].text)),
+        map((res) => {
+          const tokens = res.data?.usageMetadata?.totalTokenCount;
+          this.metrics.track(AiEndpoint.TRANSLATE, tokens);
+          return JSON.parse(res.data.candidates[0].content.parts[0].text);
+        }),
         catchError((err) => this.catchError(err)),
       );
     return firstValueFrom(result$);
@@ -91,7 +103,11 @@ export class GeminiService {
           count: 3,
           delay: (err, retryCount) => this.delay(err, retryCount),
         }),
-        map((res) => JSON.parse(res.data.candidates[0].content.parts[0].text)),
+        map((res) => {
+          const tokens = res.data?.usageMetadata?.totalTokenCount;
+          this.metrics.track(AiEndpoint.ANALYZE, tokens);
+          return JSON.parse(res.data.candidates[0].content.parts[0].text);
+        }),
         catchError((err) => this.catchError(err)),
       );
     return firstValueFrom(result$);

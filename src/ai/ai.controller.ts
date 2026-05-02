@@ -2,6 +2,7 @@ import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
   Param,
@@ -20,6 +21,7 @@ import { AnalyzeArticleResponse } from './dto/analyze-article-response-dto';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { createCacheKey } from '../shared/utils';
 import { AiCacheService } from './ai.cash.service';
+import { AiMetricsService } from './ai.metrics.service';
 
 @ApiTags('ai/articles')
 @UseGuards(ThrottlerGuard)
@@ -27,6 +29,7 @@ import { AiCacheService } from './ai.cash.service';
 export class AiController {
   constructor(
     private readonly cache: AiCacheService,
+    private readonly metrics: AiMetricsService,
     private readonly geminiService: GeminiService,
     private readonly articleService: ArticleService,
   ) {}
@@ -161,5 +164,10 @@ export class AiController {
       suggestions: result.suggestions,
       severity: result.severity,
     } satisfies AnalyzeArticleResponse;
+  }
+
+  @Get('usage')
+  getUsage() {
+    return this.metrics.getStats();
   }
 }

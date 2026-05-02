@@ -71,6 +71,7 @@ const SENSITIVE_KEYS = [
   'auth',
   'secret',
   'clientSecret',
+  'baseUrl',
 ];
 
 const isSensitiveKey = (key: string): boolean => {
