@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { createSummarizeArticlePrompt } from './prompt/summarization.prompt';
 import {
@@ -17,7 +17,6 @@ import { StatusCodes } from 'http-status-codes';
 import {
   InternalServerError,
   ServerUnavailableError,
-  TooManyRequestError,
 } from '../shared/error/knowledge-hub-errors';
 
 @Injectable()
@@ -40,41 +39,10 @@ export class GeminiService {
       .pipe(
         retry({
           count: 3,
-          delay: (_, retryCount) => {
-            const backoffTime = Math.pow(2, retryCount - 1) * 1000;
-            this.logger.debug(
-              `Attempt ${retryCount} failed. Retrying in ${backoffTime}ms...`,
-            );
-            return timer(backoffTime);
-          },
+          delay: (err, retryCount) => this.delay(err, retryCount),
         }),
         map((res) => res.data.candidates[0].content.parts[0].text),
-        catchError((err) => {
-          const status = err.status;
-
-          if (
-            [StatusCodes.UNAUTHORIZED, StatusCodes.FORBIDDEN].includes(status)
-          ) {
-            this.logger.error('Gemini Auth Error: Check your API Key.', err);
-            return throwError(() => new InternalServerError());
-          }
-
-          if (
-            [
-              StatusCodes.BAD_GATEWAY,
-              StatusCodes.SERVICE_UNAVAILABLE,
-              StatusCodes.GATEWAY_TIMEOUT,
-            ].includes(status)
-          ) {
-            return throwError(() => new ServerUnavailableError());
-          }
-
-          if ([StatusCodes.TOO_MANY_REQUESTS].includes(status)) {
-            return throwError(() => new ServerUnavailableError());
-          }
-
-          return throwError(() => new InternalServerError());
-        }),
+        catchError((err) => this.catchError(err)),
       );
     return firstValueFrom(result$);
   }
@@ -89,48 +57,81 @@ export class GeminiService {
       targetLanguage,
       sourceLanguage,
     );
-    try {
-      const response = await firstValueFrom(
-        this.httpService.post(this.url, {
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            responseMimeType: 'application/json',
-          },
+
+    const result$ = this.httpService
+      .post(this.url, {
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          responseMimeType: 'application/json',
+        },
+      })
+      .pipe(
+        retry({
+          count: 3,
+          delay: (err, retryCount) => this.delay(err, retryCount),
         }),
+        map((res) => JSON.parse(res.data.candidates[0].content.parts[0].text)),
+        catchError((err) => this.catchError(err)),
       );
-      const rawContent = response.data.candidates[0].content.parts[0].text;
-      const cleanJson = rawContent.replace(/```json|```/g, '').trim();
-      console.log(cleanJson);
-      return JSON.parse(cleanJson);
-    } catch (error) {
-      this.logger.error(
-        'Gemini Error: ' +
-          (JSON.stringify(error.response?.data) + ' ' + error.message),
-        error,
-      );
-      throw error;
-    }
+    return firstValueFrom(result$);
   }
 
   async analyzeArticle(content: string, task: Task) {
     const prompt = analyzation(content, task);
-    try {
-      const response = await firstValueFrom(
-        this.httpService.post(this.url, {
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            responseMimeType: 'application/json',
-          },
-        }),
-      );
 
-      const rawText = response.data.candidates[0].content.parts[0].text;
-      return JSON.parse(rawText);
-    } catch (error) {
-      this.logger.error(
-        'Gemini Error: ' + (error.response?.data || error.message),
-        error,
+    const result$ = this.httpService
+      .post(this.url, {
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          responseMimeType: 'application/json',
+        },
+      })
+      .pipe(
+        retry({
+          count: 3,
+          delay: (err, retryCount) => this.delay(err, retryCount),
+        }),
+        map((res) => JSON.parse(res.data.candidates[0].content.parts[0].text)),
+        catchError((err) => this.catchError(err)),
       );
+    return firstValueFrom(result$);
+  }
+
+  private catchError(err: any) {
+    const status = err.status;
+
+    if ([StatusCodes.UNAUTHORIZED, StatusCodes.FORBIDDEN].includes(status)) {
+      return throwError(() => new InternalServerError());
     }
+
+    if (
+      [
+        StatusCodes.BAD_GATEWAY,
+        StatusCodes.SERVICE_UNAVAILABLE,
+        StatusCodes.GATEWAY_TIMEOUT,
+      ].includes(status)
+    ) {
+      return throwError(() => new ServerUnavailableError());
+    }
+
+    if ([StatusCodes.TOO_MANY_REQUESTS].includes(status)) {
+      return throwError(() => new ServerUnavailableError());
+    }
+
+    return throwError(() => {
+      this.logger.error('Unknown error: ' + err);
+      return new InternalServerError();
+    });
+  }
+
+  private delay(err: any, retryCount: number) {
+    if (err.status !== HttpStatus.TOO_MANY_REQUESTS) {
+      throw err;
+    }
+    const backoffTime = Math.pow(2, retryCount - 1) * 1000;
+    this.logger.debug(
+      `Attempt ${retryCount} failed. Retrying in ${backoffTime}ms...`,
+    );
+    return timer(backoffTime);
   }
 }
