@@ -9,6 +9,7 @@ import {
   ParseUUIDPipe,
   Post,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { ArticleService } from '../article/article.service';
 import { GeminiService } from './gemini.service';
@@ -21,10 +22,12 @@ import { AnalyzeArticleResponseDto } from './dto/analyze-article-response-dto';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { createCacheKey } from '../shared/utils';
 import { AiCacheService } from './ai.cash.service';
-import { AiMetricsService } from './ai.metrics.service';
+import { AiEndpoint, AiMetricsService } from './ai.metrics.service';
 import { GeneratePromptDto } from './dto/generate-prompt-dto';
+import { AiLoggingInterceptor } from './ai-logging-interceptor';
 
 @ApiTags('ai')
+@UseInterceptors(AiLoggingInterceptor)
 @UseGuards(ThrottlerGuard)
 @Controller('ai')
 export class AiController {
@@ -60,6 +63,7 @@ export class AiController {
 
     const cached = this.cache.get<string>(key);
     if (cached) {
+      this.metrics.track(AiEndpoint.SUMMARIZE, 0, true);
       return {
         articleId: article.id,
         summary: cached,
@@ -115,6 +119,7 @@ export class AiController {
     });
     const cached: TranslateArticleResponseDto = this.cache.get(key);
     if (cached) {
+      this.metrics.track(AiEndpoint.TRANSLATE, 0, true);
       return {
         articleId: article.id,
         translatedText: cached.translatedText,

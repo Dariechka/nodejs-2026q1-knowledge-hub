@@ -32,16 +32,6 @@ After cloning the repository, you need to set up your environment variables:
     AI_CACHE_TTL_SEC=300
     ```
 
-### 3. Running & Testing
-Once the API key is configured, start the application:
-```bash
-# Install dependencies
-$ npm install
-
-# Start the application
-$ npm run start:dev
-```
-
 **Testing the AI Endpoints:**
 You can test the implementation using the built-in Swagger UI at `http://localhost:3000/api` (or your configured port). Look for the following routes:
 *   `POST /ai/articles/:articleId/analyze`: Generates quality checks and suggestions.
@@ -73,6 +63,33 @@ All AI interactions, including token usage and endpoint hits, are tracked intern
 ### 4. Error Handling & Resilience
 *   **Graceful Recovery:** All Gemini API errors (network timeouts, safety blocks, or service interruptions) are handled gracefully using RxJS `catchError` logic within `gemini.service.ts`.
 *   **Exponential Backoff:** The system is configured to retry failed requests 3 times, doubling the wait time between each attempt ($1s \to 2s \to 4s$).
+
+### 5. AI Observability & Diagnostics
+
+To monitor performance and cost-efficiency, the project includes built-in observability tools:
+
+#### 1. Real-Time Latency Tracking (`AiLoggingInterceptor`)
+Every request made to the AI controller is intercepted to measure execution time.
+*   **What to look for:** Check your terminal/console after an AI request. You will see a log entry:  
+    `[AI Diagnostics] POST /ai/summarize/1 took 1250ms`
+*   **Why it matters:** This helps you distinguish between a slow AI response from Google and internal processing overhead.
+
+#### 2. Cache Performance & Metrics (`AiMetricsService`)
+We track how effectively the `AiCacheService` is reducing our API dependency through a **Cache Hit Ratio**.
+*   **Tracked Endpoints:** Specifically monitors the `summarize` and `analyze` routes.
+*   **Calculation:** `(Total Cache Hits / Total Cacheable Requests) * 100`.
+
+  How to Test Diagnostics
+To verify that caching and metrics are working correctly:
+1.  **Step 1:** Perform a `POST` request to `http://localhost:4000/ai/summarize/1`. (Console should show ~1-2s latency).
+2.  **Step 2:** Perform the **same request 3 more times**. (Console should show <10ms latency).
+3.  **Step 3:** Open your browser or Postman and call:
+    `GET http://localhost:4000/ai/usage`
+4.  **The Result:** You will see a JSON response showing the total number of cached hits and a high `cacheHitRatio`, proving the efficiency of the implementation.
+
+### 6. Structured AI output validation
+Data Integrity & Output Validation
+One of the biggest challenges with AI is "hallucination" or malformed JSON. To solve this, we implemented the AiValidationService.
 
 ---
 
