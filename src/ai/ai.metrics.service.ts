@@ -9,6 +9,7 @@ export enum AiEndpoint {
   SUMMARIZE = 'summarize',
   TRANSLATE = 'translate',
   ANALYZE = 'analyze',
+  GENERATE = 'generate',
 }
 
 @Injectable()

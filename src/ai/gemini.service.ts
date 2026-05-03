@@ -113,6 +113,26 @@ export class GeminiService {
     return firstValueFrom(result$);
   }
 
+  generate(context: string): Promise<string> {
+    return firstValueFrom(
+      this.httpService
+        .post(this.url, {
+          contents: [{ parts: [{ text: context }] }],
+        })
+        .pipe(
+          retry({
+            count: 3,
+            delay: (err, retryCount) => this.delay(err, retryCount),
+          }),
+          map((res) => {
+            const tokens = res.data?.usageMetadata?.totalTokenCount;
+            this.metrics.track(AiEndpoint.GENERATE, tokens);
+            return res.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+          }),
+        ),
+    );
+  }
+
   private catchError(err: any) {
     const status = err.status;
 

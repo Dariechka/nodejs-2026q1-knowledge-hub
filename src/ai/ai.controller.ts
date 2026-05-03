@@ -22,10 +22,11 @@ import { ThrottlerGuard } from '@nestjs/throttler';
 import { createCacheKey } from '../shared/utils';
 import { AiCacheService } from './ai.cash.service';
 import { AiMetricsService } from './ai.metrics.service';
+import { GeneratePromptDto } from './dto/generate-prompt-dto';
 
-@ApiTags('ai/articles')
+@ApiTags('ai')
 @UseGuards(ThrottlerGuard)
-@Controller('ai/articles')
+@Controller('ai')
 export class AiController {
   constructor(
     private readonly cache: AiCacheService,
@@ -34,7 +35,7 @@ export class AiController {
     private readonly articleService: ArticleService,
   ) {}
 
-  @Post(':articleId/summarize')
+  @Post('articles/:articleId/summarize')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Summarize article' })
   @ApiBody({ type: SummarizeArticleDto })
@@ -81,7 +82,7 @@ export class AiController {
     } satisfies SummarizeArticleResponse;
   }
 
-  @Post(':articleId/translate')
+  @Post('articles/:articleId/translate')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Translate article content' })
   @ApiBody({ type: TranslateArticleDto })
@@ -135,7 +136,7 @@ export class AiController {
     } satisfies TranslateArticleResponse;
   }
 
-  @Post(':articleId/analyze')
+  @Post('articles/:articleId/analyze')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Analyze article' })
   @ApiBody({ type: SummarizeArticleDto })
@@ -169,5 +170,10 @@ export class AiController {
   @Get('usage')
   getUsage() {
     return this.metrics.getStats();
+  }
+
+  @Post('generate')
+  generate(@Body() dto: GeneratePromptDto): Promise<string> {
+    return this.geminiService.generate(dto.prompt);
   }
 }
