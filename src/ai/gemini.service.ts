@@ -19,6 +19,10 @@ import {
   ServerUnavailableError,
 } from '../shared/error/knowledge-hub-errors';
 import { AiEndpoint, AiMetricsService } from './ai.metrics.service';
+import { AiValidationService } from './ai.validation.service';
+import { TranslateOutputDto } from './dto/translate-output-dto';
+import { AnalyzeOutputDto } from './dto/analyze-output-dto';
+import { AnalysisSeverity } from './dto/analyze-article-response-dto';
 
 @Injectable()
 export class GeminiService {
@@ -29,6 +33,7 @@ export class GeminiService {
   private readonly url: string = `${this.baseUrl}/${this.model}:generateContent?key=${this.apiKey}`;
 
   constructor(
+    private readonly validate: AiValidationService,
     private readonly httpService: HttpService,
     private readonly metrics: AiMetricsService,
   ) {}
@@ -81,7 +86,14 @@ export class GeminiService {
         map((res) => {
           const tokens = res.data?.usageMetadata?.totalTokenCount;
           this.metrics.track(AiEndpoint.TRANSLATE, tokens);
-          return JSON.parse(res.data.candidates[0].content.parts[0].text);
+          return this.validate.validateOutputData(
+            TranslateOutputDto,
+            JSON.parse(res.data.candidates[0].content.parts[0].text),
+            {
+              translatedText: content,
+              detectedLanguage: sourceLanguage ?? 'unknown',
+            },
+          );
         }),
         catchError((err) => this.catchError(err)),
       );
@@ -106,7 +118,15 @@ export class GeminiService {
         map((res) => {
           const tokens = res.data?.usageMetadata?.totalTokenCount;
           this.metrics.track(AiEndpoint.ANALYZE, tokens);
-          return JSON.parse(res.data.candidates[0].content.parts[0].text);
+          return this.validate.validateOutputData(
+            AnalyzeOutputDto,
+            JSON.parse(res.data.candidates[0].content.parts[0].text),
+            {
+              analysis: 'Failed to analyze text',
+              suggestions: [],
+              severity: AnalysisSeverity.ERROR,
+            },
+          );
         }),
         catchError((err) => this.catchError(err)),
       );

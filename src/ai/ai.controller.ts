@@ -13,11 +13,11 @@ import {
 import { ArticleService } from '../article/article.service';
 import { GeminiService } from './gemini.service';
 import { SummarizeArticleDto } from './dto/summarize-article-dto';
-import { SummarizeArticleResponse } from './dto/summarize-article-response-dto';
+import { SummarizeArticleResponseDto } from './dto/summarize-article-response-dto';
 import { TranslateArticleDto } from './dto/translate-article-dto';
-import { TranslateArticleResponse } from './dto/translate-article-response-dto';
+import { TranslateArticleResponseDto } from './dto/translate-article-response-dto';
 import { AnalyzeArticleDto } from './dto/analyze-article-dto';
-import { AnalyzeArticleResponse } from './dto/analyze-article-response-dto';
+import { AnalyzeArticleResponseDto } from './dto/analyze-article-response-dto';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { createCacheKey } from '../shared/utils';
 import { AiCacheService } from './ai.cash.service';
@@ -51,7 +51,7 @@ export class AiController {
   async summarize(
     @Param('articleId', new ParseUUIDPipe({ version: '4' })) articleId: string,
     @Body() summarizeDto: SummarizeArticleDto,
-  ): Promise<SummarizeArticleResponse> {
+  ): Promise<SummarizeArticleResponseDto> {
     const article = await this.articleService.findOne(articleId);
     const key = createCacheKey({
       articleId,
@@ -65,7 +65,7 @@ export class AiController {
         summary: cached,
         originalLength: article.content.length,
         summaryLength: cached.length,
-      } satisfies SummarizeArticleResponse;
+      } satisfies SummarizeArticleResponseDto;
     }
 
     const summary = await this.geminiService.fetchSummary(
@@ -79,7 +79,7 @@ export class AiController {
       summary,
       originalLength: article.content.length,
       summaryLength: summary.length,
-    } satisfies SummarizeArticleResponse;
+    } satisfies SummarizeArticleResponseDto;
   }
 
   @Post('articles/:articleId/translate')
@@ -101,7 +101,7 @@ export class AiController {
   async translate(
     @Param('articleId', new ParseUUIDPipe({ version: '4' })) articleId: string,
     @Body() translateDto: TranslateArticleDto,
-  ): Promise<TranslateArticleResponse> {
+  ): Promise<TranslateArticleResponseDto> {
     const article = await this.articleService.findOne(articleId);
     const parameters = Object.keys(translateDto)
       .sort()
@@ -113,13 +113,13 @@ export class AiController {
       articleId,
       params: parameters,
     });
-    const cached: TranslateArticleResponse = this.cache.get(key);
+    const cached: TranslateArticleResponseDto = this.cache.get(key);
     if (cached) {
       return {
         articleId: article.id,
         translatedText: cached.translatedText,
         detectedLanguage: cached.detectedLanguage,
-      } satisfies TranslateArticleResponse;
+      } satisfies TranslateArticleResponseDto;
     }
 
     const result = await this.geminiService.translateArticle(
@@ -133,7 +133,7 @@ export class AiController {
       articleId: article.id,
       translatedText: result.translatedText,
       detectedLanguage: result.detectedLanguage,
-    } satisfies TranslateArticleResponse;
+    } satisfies TranslateArticleResponseDto;
   }
 
   @Post('articles/:articleId/analyze')
@@ -152,7 +152,7 @@ export class AiController {
   async analyze(
     @Param('articleId', new ParseUUIDPipe({ version: '4' })) articleId: string,
     @Body() analyzeDto: AnalyzeArticleDto,
-  ): Promise<AnalyzeArticleResponse> {
+  ): Promise<AnalyzeArticleResponseDto> {
     const article = await this.articleService.findOne(articleId);
     const result = await this.geminiService.analyzeArticle(
       article.content,
@@ -164,7 +164,7 @@ export class AiController {
       analysis: result.analysis,
       suggestions: result.suggestions,
       severity: result.severity,
-    } satisfies AnalyzeArticleResponse;
+    } satisfies AnalyzeArticleResponseDto;
   }
 
   @Get('usage')
