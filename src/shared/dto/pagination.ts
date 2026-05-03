@@ -15,4 +15,8 @@ export class Pagination {
   @IsInt()
   @Min(1)
   limit?: number;
+
+  constructor(partial: Partial<Pagination>) {
+    Object.assign(this, partial);
+  }
 }

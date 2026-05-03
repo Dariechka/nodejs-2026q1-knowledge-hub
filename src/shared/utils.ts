@@ -1,6 +1,8 @@
 import { Sorting } from './dto/sorting';
 import { Pagination } from './dto/pagination';
 
+export const isProd = process.env.NODE_ENV === 'production';
+
 export const sort = <T>(items: Array<T>, sorting: Sorting): Array<T> => {
   if (sorting.sortBy === undefined || sorting.order === undefined) {
     return items;
@@ -28,3 +30,84 @@ export const paginate = <T>(
   const limit = pagination.limit;
   return items.slice(page * limit, page * limit + limit);
 };
+
+export const toPrismaPagination = (
+  pagination: Pagination,
+): { skip?: number; take?: number } => {
+  if (pagination.page === undefined || pagination.limit === undefined) {
+    return {};
+  }
+  const page = pagination.page;
+  const limit = pagination.limit;
+  return {
+    skip: page * limit,
+    take: limit,
+  };
+};
+
+export const toPrismaSorting = (
+  sorting: Sorting,
+): { orderBy?: { [key: string]: 'asc' | 'desc' } } => {
+  if (sorting.sortBy === undefined || sorting.order === undefined) {
+    return {};
+  }
+  const sortBy = sorting.sortBy;
+  const order = sorting.order;
+  return {
+    orderBy: {
+      [sortBy]: order,
+    },
+  };
+};
+
+type AnyObject = Record<string, any>;
+
+const SENSITIVE_KEYS = [
+  'password',
+  'token',
+  'apiKey',
+  'api_key',
+  'authorization',
+  'auth',
+  'secret',
+  'clientSecret',
+  'baseUrl',
+];
+
+const isSensitiveKey = (key: string): boolean => {
+  const lower = key.toLowerCase();
+  return SENSITIVE_KEYS.some((k) => lower.includes(k));
+};
+
+export const sanitize = <T = any>(input: T): T => {
+  if (Array.isArray(input)) {
+    return input.map((item) => sanitize(item)) as any;
+  }
+
+  if (input !== null && typeof input === 'object') {
+    const result: AnyObject = {};
+
+    for (const [key, value] of Object.entries(input)) {
+      if (isSensitiveKey(key)) {
+        result[key] = '[REDACTED]';
+        continue;
+      }
+
+      result[key] = sanitize(value);
+    }
+
+    return result as T;
+  }
+
+  return input;
+};
+
+export function createCacheKey({
+  articleId,
+  params,
+}: {
+  articleId: string;
+  params: Record<string, any>;
+}) {
+  return ['gemini', articleId, JSON.stringify(params)].join(':');
+}

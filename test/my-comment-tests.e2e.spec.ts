@@ -2,12 +2,24 @@ import { request } from './lib';
 import { articlesRoutes, commentsRoutes } from './endpoints';
 import { StatusCodes } from 'http-status-codes';
 import { validate } from 'uuid';
+import {
+  getTokenAndUserId,
+  removeTokenUser,
+  shouldAuthorizationBeTested,
+} from './utils';
 
 describe('Additional Comment tests', () => {
+  const unauthorizedRequest = request;
   const commonHeaders = { Accept: 'application/json' };
+  let mockUserId: string | undefined;
   let testArticleId: string;
 
   beforeAll(async () => {
+    if (shouldAuthorizationBeTested) {
+      const result = await getTokenAndUserId(unauthorizedRequest);
+      commonHeaders['Authorization'] = result.token;
+      mockUserId = result.mockUserId;
+    }
     const createArticleResponse = await request
       .post(articlesRoutes.create)
       .set(commonHeaders)
@@ -25,15 +37,23 @@ describe('Additional Comment tests', () => {
   });
 
   afterAll(async () => {
+    if (mockUserId) {
+      await removeTokenUser(unauthorizedRequest, mockUserId, commonHeaders);
+    }
+
+    if (commonHeaders['Authorization']) {
+      delete commonHeaders['Authorization'];
+    }
+
     if (testArticleId) {
-      await request
+      await unauthorizedRequest
         .delete(articlesRoutes.delete(testArticleId))
         .set(commonHeaders);
     }
   });
 
   it('should create, get, and delete a comment', async () => {
-    const createArticleResponse = await request
+    const createArticleResponse = await unauthorizedRequest
       .post(articlesRoutes.create)
       .set(commonHeaders)
       .send({
@@ -55,7 +75,7 @@ describe('Additional Comment tests', () => {
       authorId: null,
     };
 
-    const createCommentResponse = await request
+    const createCommentResponse = await unauthorizedRequest
       .post(commentsRoutes.create)
       .set(commonHeaders)
       .send(createCommentDto);
@@ -76,23 +96,23 @@ describe('Additional Comment tests', () => {
     expect(authorId).toBeNull();
     expect(typeof createdAt).toBe('number');
 
-    const getResponse = await request
+    const getResponse = await unauthorizedRequest
       .get(commentsRoutes.getById(commentId))
       .set(commonHeaders);
     expect(getResponse.status).toBe(StatusCodes.OK);
     expect(getResponse.body.id).toBe(commentId);
 
-    const deleteResponse = await request
+    const deleteResponse = await unauthorizedRequest
       .delete(commentsRoutes.delete(commentId))
       .set(commonHeaders);
     expect(deleteResponse.status).toBe(StatusCodes.NO_CONTENT);
 
-    const verifyResponse = await request
+    const verifyResponse = await unauthorizedRequest
       .get(commentsRoutes.getById(commentId))
       .set(commonHeaders);
     expect(verifyResponse.status).toBe(StatusCodes.NOT_FOUND);
 
-    const cleanupArticle = await request
+    const cleanupArticle = await unauthorizedRequest
       .delete(articlesRoutes.delete(testArticleId))
       .set(commonHeaders);
     expect(cleanupArticle.status).toBe(StatusCodes.NO_CONTENT);

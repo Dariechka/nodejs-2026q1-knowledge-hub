@@ -1,6 +1,11 @@
 import { request } from './lib';
 import { StatusCodes } from 'http-status-codes';
 import { categoriesRoutes, articlesRoutes } from './endpoints';
+import {
+  getTokenAndUserId,
+  removeTokenUser,
+  shouldAuthorizationBeTested,
+} from './utils';
 
 const createCategoryDto = {
   name: 'TEMP_CATEGORY',
@@ -8,10 +13,30 @@ const createCategoryDto = {
 };
 
 describe('Additional Category tests', () => {
+  const unauthorizedRequest = request;
   const commonHeaders = { Accept: 'application/json' };
+  let mockUserId: string | undefined;
+
+  beforeAll(async () => {
+    if (shouldAuthorizationBeTested) {
+      const result = await getTokenAndUserId(unauthorizedRequest);
+      commonHeaders['Authorization'] = result.token;
+      mockUserId = result.mockUserId;
+    }
+  });
+
+  afterAll(async () => {
+    if (mockUserId) {
+      await removeTokenUser(unauthorizedRequest, mockUserId, commonHeaders);
+    }
+
+    if (commonHeaders['Authorization']) {
+      delete commonHeaders['Authorization'];
+    }
+  });
 
   it('should create, delete, and return 404 on fetching deleted category', async () => {
-    const createResponse = await request
+    const createResponse = await unauthorizedRequest
       .post(categoriesRoutes.create)
       .set(commonHeaders)
       .send(createCategoryDto);
@@ -19,13 +44,13 @@ describe('Additional Category tests', () => {
     expect(createResponse.status).toBe(StatusCodes.CREATED);
     const { id } = createResponse.body;
 
-    const deleteResponse = await request
+    const deleteResponse = await unauthorizedRequest
       .delete(categoriesRoutes.delete(id))
       .set(commonHeaders);
 
     expect(deleteResponse.status).toBe(StatusCodes.NO_CONTENT);
 
-    const getResponse = await request
+    const getResponse = await unauthorizedRequest
       .get(categoriesRoutes.getById(id))
       .set(commonHeaders);
 
@@ -33,7 +58,7 @@ describe('Additional Category tests', () => {
   });
 
   it('should set categoryId to null for all articles when category is deleted', async () => {
-    const categoryResponse = await request
+    const categoryResponse = await unauthorizedRequest
       .post(categoriesRoutes.create)
       .set(commonHeaders)
       .send(createCategoryDto);
@@ -49,7 +74,7 @@ describe('Additional Category tests', () => {
       tags: [],
     };
 
-    const articleResponse = await request
+    const articleResponse = await unauthorizedRequest
       .post(articlesRoutes.create)
       .set(commonHeaders)
       .send(createArticleDto);
@@ -62,7 +87,7 @@ describe('Additional Category tests', () => {
       .set(commonHeaders);
 
     // Fetch article and verify categoryId is null
-    const getArticleResponse = await request
+    const getArticleResponse = await unauthorizedRequest
       .get(articlesRoutes.getById(articleId))
       .set(commonHeaders);
 
