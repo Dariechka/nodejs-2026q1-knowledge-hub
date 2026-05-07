@@ -12,9 +12,11 @@ import { AiModule } from './ai/ai.module';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { HealthCheckModule } from './healthcheck/heathcheck.module';
 import { RagModule } from './rag/rag.module';
+import { QdrantModule } from './qdrant/qdrant.module';
 
 @Module({
   imports: [
+    QdrantModule,
     HealthCheckModule,
     UsersModule,
     ArticleModule,

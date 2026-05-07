@@ -1,13 +1,14 @@
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { Body, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import { ReindexRequestDto } from './dto/reindex-request-dto';
 import { ReindexResponseDto } from './dto/reindex-response-dto';
 import { RagService } from './rag.service';
 
 @ApiTags('ai')
+@Controller('ai')
 export class RagController {
   constructor(private readonly ragService: RagService) {}
-  @Post('/rag/index')
+  @Post('rag/index')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Index Knowledge Hub articles into vector database',

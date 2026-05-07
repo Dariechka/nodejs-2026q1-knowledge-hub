@@ -15,7 +15,7 @@ type PointStruct = Schemas['PointStruct'];
 @Injectable()
 export class RagService implements OnModuleInit {
   private readonly collectionName: string =
-    process.env.REACT_APP_ROUTE_NAME ?? 'collection';
+    process.env.RAG_VECTOR_COLLECTION ?? 'collection';
   private readonly chunkSize: number =
     Number(process.env.RAG_CHUNK_SIZE) ?? 800;
   private readonly chunkOverlap: number =
@@ -63,7 +63,7 @@ export class RagService implements OnModuleInit {
     }
     const articles = await this.articleService.findAll(
       filter,
-      { page: 1, limit: 1000 },
+      { page: 0, limit: 1000 },
       { sortBy: 'createdAt', order: SortOrder.ASC },
     );
 
@@ -89,6 +89,9 @@ export class RagService implements OnModuleInit {
           };
         }),
       );
+
+      // console.log('===================');
+      // console.log(JSON.stringify(points, null, 2));
 
       await this.qdrant.upsert(this.collectionName, {
         wait: true,

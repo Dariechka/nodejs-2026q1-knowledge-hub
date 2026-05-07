@@ -8,9 +8,10 @@ export class GeminiRagService {
   private readonly apiKey: string = process.env.GEMINI_API_KEY;
   private readonly baseUrl: string = process.env.GEMINI_API_BASE_URL;
   private readonly model: string = process.env.GEMINI_MODEL;
-  private readonly url: string = `${this.baseUrl}/${this.model}:generateContent?key=${this.apiKey}`;
-  private readonly defaultEmbeddingModel: string =
-    process.env.GEMINI_EMBEDDING_MODEL ?? 'text-embedding-004';
+  private readonly embeddingModel: string =
+    process.env.GEMINI_EMBEDDING_MODEL ?? 'gemini-embedding-2';
+  private readonly embeddingModelUrl: string = `${this.baseUrl}/${this.embeddingModel}:embedContent?key=${this.apiKey}`;
+  private readonly modelUrl: string = `${this.baseUrl}/${this.model}:generateContent?key=${this.apiKey}`;
 
   constructor(private readonly httpService: HttpService) {}
 
@@ -19,8 +20,8 @@ export class GeminiRagService {
 
     try {
       const { data } = await firstValueFrom(
-        this.httpService.post(this.url, {
-          model: `models/${this.defaultEmbeddingModel}`,
+        this.httpService.post(this.embeddingModelUrl, {
+          output_dimensionality: 768,
           content: { parts: [{ text }] },
         }),
       );
@@ -45,7 +46,7 @@ export class GeminiRagService {
   async generateAnswer(prompt: string): Promise<string> {
     try {
       const { data } = await firstValueFrom(
-        this.httpService.post(this.url, {
+        this.httpService.post(this.modelUrl, {
           contents: [{ parts: [{ text: prompt }] }],
         }),
       );
