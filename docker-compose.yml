@@ -9,9 +9,11 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      vectordb:
+        condition: service_healthy
     restart: on-failure
     healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost:4000/article || exit 1"]
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:4000/health || exit 1"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -36,6 +38,20 @@ services:
     networks:
       - app-network
 
+  vectordb:
+    image: qdrant/qdrant:latest
+    container_name: qdrant_db
+    restart: always
+    ports:
+      - "6333:6333"
+    volumes:
+      - qdrant-data:/qdrant/storage
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c '</dev/tcp/localhost/6333' || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   adminer:
     image: adminer
     container_name: adminer
@@ -53,3 +69,5 @@ networks:
 volumes:
   pg-data:
     name: postgres_persistence
+  qdrant-data:
+    name: qdrant_persistence

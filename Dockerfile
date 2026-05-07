@@ -4,6 +4,7 @@ WORKDIR /app
 
 COPY . /app/
 
+RUN apk add --no-cache wget
 RUN npm ci
 RUN npm run build
 RUN cp -R ./node_modules/.prisma ./.prisma

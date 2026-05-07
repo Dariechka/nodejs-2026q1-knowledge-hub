@@ -10,9 +10,11 @@ import { AuthModule } from './auth/auth.module';
 import { configureLoggingModule } from './shared/logging';
 import { AiModule } from './ai/ai.module';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { HealthCheckModule } from './healthcheck/heathcheck.module';
 
 @Module({
   imports: [
+    HealthCheckModule,
     UsersModule,
     ArticleModule,
     CategoryModule,
