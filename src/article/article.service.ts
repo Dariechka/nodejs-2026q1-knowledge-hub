@@ -56,6 +56,7 @@ export class ArticleService {
     return this.prismaService.article.findMany({
       where: {
         OR: [
+          { id: filter.id },
           { status: filter.status },
           { categoryId: filter.categoryId },
           { authorId: filter.authorId },

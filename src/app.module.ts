@@ -11,6 +11,7 @@ import { configureLoggingModule } from './shared/logging';
 import { AiModule } from './ai/ai.module';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { HealthCheckModule } from './healthcheck/heathcheck.module';
+import { RagModule } from './rag/rag.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { HealthCheckModule } from './healthcheck/heathcheck.module';
     PrismaModule,
     AuthModule,
     AiModule,
+    RagModule,
     configureLoggingModule(),
     ConfigModule.forRoot({
       isGlobal: true,

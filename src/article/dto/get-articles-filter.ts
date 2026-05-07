@@ -3,6 +3,14 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class GetArticlesFilterDto {
   @ApiPropertyOptional({
+    example: 'b3bb189e-8bf9-3888-9912-ace4e6543003',
+    nullable: true,
+  })
+  @IsOptional()
+  @IsString()
+  id?: string;
+
+  @ApiPropertyOptional({
     enum: ['draft', 'published', 'archived'],
     example: 'published',
   })
