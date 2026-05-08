@@ -32,7 +32,8 @@ export class GeminiRagService {
     } catch (error) {
       console.error(error);
       throw new ServerUnavailableError(
-        'Failed to generate embeddings ' + error,
+        'Failed to generate embeddings due to an unavailable embedding provider ' +
+          error,
       );
     }
 
@@ -54,7 +55,7 @@ export class GeminiRagService {
       return data.candidates[0].content.parts[0].text;
     } catch (error) {
       throw new ServerUnavailableError(
-        'Failed to generate embeddings ' + error,
+        'Failed  ' + error,
       );
     }
   }

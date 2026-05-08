@@ -3,6 +3,8 @@ import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import { ReindexRequestDto } from './dto/reindex-request-dto';
 import { ReindexResponseDto } from './dto/reindex-response-dto';
 import { RagService } from './rag.service';
+import { RagSearchRequestDto } from './dto/search-request-dto';
+import { RagSearchResponseDto } from './dto/search-response-dto';
 
 @ApiTags('ai')
 @Controller('ai')
@@ -31,5 +33,29 @@ export class RagController {
   })
   async index(@Body() dto: ReindexRequestDto): Promise<ReindexResponseDto> {
     return this.ragService.reindex(dto);
+  }
+
+  @Post('rag/search')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Search Knowledge Hub articles using semantic vector search',
+    description:
+      'Performs semantic search over indexed Knowledge Hub article embeddings stored in Qdrant and returns the most relevant content chunks for retrieval-augmented generation (RAG).',
+  })
+  @ApiBody({ type: RagSearchRequestDto })
+  @ApiResponse({
+    status: 200,
+    description:
+      'Relevant article chunks were successfully retrieved from the vector database',
+  })
+  @ApiResponse({
+    status: 400,
+    description:
+      'Invalid request payload (search query is required and must be a non-empty string)',
+  })
+  async search(
+    @Body() dto: RagSearchRequestDto,
+  ): Promise<RagSearchResponseDto> {
+    return this.ragService.search(dto);
   }
 }
