@@ -54,9 +54,7 @@ export class GeminiRagService {
 
       return data.candidates[0].content.parts[0].text;
     } catch (error) {
-      throw new ServerUnavailableError(
-        'Failed  ' + error,
-      );
+      throw new ServerUnavailableError('Failed  ' + error);
     }
   }
 }

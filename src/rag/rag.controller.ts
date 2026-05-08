@@ -1,5 +1,20 @@
-import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import {
+  ApiBody,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Delete,
+  HttpCode,
+  HttpStatus,
+  Param,
+  ParseUUIDPipe,
+  Post,
+} from '@nestjs/common';
 import { ReindexRequestDto } from './dto/reindex-request-dto';
 import { ReindexResponseDto } from './dto/reindex-response-dto';
 import { RagService } from './rag.service';
@@ -57,5 +72,31 @@ export class RagController {
     @Body() dto: RagSearchRequestDto,
   ): Promise<RagSearchResponseDto> {
     return this.ragService.search(dto);
+  }
+
+  @Delete('rag/index/articles/:articleId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: 'Remove article vectors',
+    description:
+      'Deletes all vector chunks associated with a specific article ID from the vector database.',
+  })
+  @ApiParam({
+    name: 'articleId',
+    description: 'The unique UUID of the article to remove from the index',
+    example: '550e8400-e29b-41d4-a716-446655440000',
+  })
+  @ApiResponse({
+    status: 204,
+    description: 'Vectors were successfully removed from the index',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'No vector entries found for article ID',
+  })
+  async deleteByArticle(
+    @Param('articleId', new ParseUUIDPipe({ version: '4' })) articleId: string,
+  ): Promise<void> {
+    return await this.ragService.deleteArticleIndices(articleId);
   }
 }

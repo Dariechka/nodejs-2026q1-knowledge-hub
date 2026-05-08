@@ -4,7 +4,10 @@ import { ReindexResponseDto } from './dto/reindex-response-dto';
 import { QdrantClient } from '@qdrant/js-client-rest';
 import { ArticleService } from '../article/article.service';
 import { throwError } from 'rxjs';
-import { ServerUnavailableError } from '../shared/error/knowledge-hub-errors';
+import {
+  NotFoundError,
+  ServerUnavailableError,
+} from '../shared/error/knowledge-hub-errors';
 import { SortOrder } from '../shared/dto/sorting';
 import { GeminiRagService } from './gemini.rag.service';
 import { createHash } from 'node:crypto';
@@ -168,6 +171,50 @@ export class RagService implements OnModuleInit {
     } catch (error) {
       throw new ServerUnavailableError(
         'Failed to perform semantic search due to an unavailable vector database service',
+      );
+    }
+  }
+
+  async deleteArticleIndices(articleId: string): Promise<void> {
+    try {
+      const result = await this.qdrant.scroll(this.collectionName, {
+        filter: {
+          must: [
+            {
+              key: 'articleId',
+              match: { value: articleId },
+            },
+          ],
+        },
+        limit: 1,
+        with_payload: false,
+        with_vector: false,
+      });
+
+      if (result.points.length === 0) {
+        throw new NotFoundError(
+          `No vector entries found for article ID: ${articleId}`,
+        );
+      }
+
+      await this.qdrant.delete(this.collectionName, {
+        filter: {
+          must: [
+            {
+              key: 'articleId',
+              match: { value: articleId },
+            },
+          ],
+        },
+        wait: true,
+      });
+    } catch (error) {
+      if (error instanceof NotFoundError) {
+        throw error;
+      }
+
+      throw new ServerUnavailableError(
+        'Failed to delete article due to an unavailable vector database service',
       );
     }
   }
