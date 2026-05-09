@@ -20,6 +20,8 @@ import { ReindexResponseDto } from './dto/reindex-response-dto';
 import { RagService } from './rag.service';
 import { RagSearchRequestDto } from './dto/search-request-dto';
 import { RagSearchResponseDto } from './dto/search-response-dto';
+import { RagChatRequestDto } from './dto/chat-request-dto';
+import { RagChatResponseDto } from './dto/chat-response-dto';
 
 @ApiTags('ai')
 @Controller('ai')
@@ -98,5 +100,25 @@ export class RagController {
     @Param('articleId', new ParseUUIDPipe({ version: '4' })) articleId: string,
   ): Promise<void> {
     return await this.ragService.deleteArticleIndices(articleId);
+  }
+
+  @Post('rag/chat')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Generate an AI answer based on knowledge base context',
+    description:
+      'Performs a vector search for context and uses Gemini to generate a natural language response.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'AI answer was successfully generated',
+    type: RagChatRequestDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid request payload (question is missing or empty)',
+  })
+  async chat(@Body() dto: RagChatRequestDto): Promise<RagChatResponseDto> {
+    return this.ragService.chat(dto);
   }
 }

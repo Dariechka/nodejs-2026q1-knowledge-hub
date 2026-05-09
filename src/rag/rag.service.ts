@@ -15,6 +15,8 @@ import { Schemas } from '@qdrant/js-client-rest';
 import { RagSearchRequestDto } from './dto/search-request-dto';
 import { RagSearchResponseDto } from './dto/search-response-dto';
 import { Article } from '../article/entities/article.entity';
+import { RagChatRequestDto } from './dto/chat-request-dto';
+import { RagChatResponseDto } from './dto/chat-response-dto';
 
 type PointStruct = Schemas['PointStruct'];
 
@@ -234,5 +236,64 @@ export class RagService implements OnModuleInit {
   private generateDeterministicId(articleId: string, index: number): string {
     const input = `${articleId}-chunk-${index}`;
     return createHash('sha256').update(input).digest('hex').substring(0, 32);
+  }
+
+  async chat(dto: RagChatRequestDto): Promise<RagChatResponseDto> {
+    try {
+      const vector = await this.gemini.fetchEmbeddings(dto.question);
+      const searchResults = await this.qdrant.search(this.collectionName, {
+        vector,
+        limit: 3,
+        with_payload: true,
+      });
+
+      const filteredResults = searchResults.filter(
+        (point) => (point.score ?? 0) > 0.4,
+      );
+
+      if (filteredResults.length === 0) {
+        return {
+          answer: "I couldn't find relevant information in the knowledge base.",
+          sources: [],
+          conversationId: dto.conversationId ?? crypto.randomUUID(),
+        };
+      }
+
+      const sources = searchResults.map((point) => ({
+        articleId: String(point.payload?.articleId ?? ''),
+        articleTitle: String(point.payload?.title ?? ''),
+        relevantChunk: String(point.payload?.content ?? ''),
+      }));
+      const contextText = sources
+        .map((s) => `Source: ${s.articleTitle}\nContent: ${s.relevantChunk}`)
+        .join('\n');
+
+      const ragPrompt = `
+    Answering questions using ONLY the provided context.
+
+Rules:
+- Use only the supplied context.
+- Do not invent information.
+- If the answer is not present in the context, say:
+  "I could not find this information in the knowledge base."
+- Be concise and factual.
+    
+    Context:
+    ${contextText}
+    
+    User Question: ${dto.question}
+  `;
+
+      const answer = await this.gemini.generateAnswer(ragPrompt);
+      return {
+        answer,
+        sources,
+        conversationId: dto.conversationId ?? crypto.randomUUID(),
+      };
+    } catch {
+      throw new ServerUnavailableError(
+        'Failed to perform RAG conversation due to vector database services',
+      );
+    }
   }
 }

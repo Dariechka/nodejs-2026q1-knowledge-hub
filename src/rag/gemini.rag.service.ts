@@ -44,17 +44,24 @@ export class GeminiRagService {
     }
   }
 
-  async generateAnswer(prompt: string): Promise<string> {
+  async generateAnswer(prompt: string) {
     try {
       const { data } = await firstValueFrom(
         this.httpService.post(this.modelUrl, {
-          contents: [{ parts: [{ text: prompt }] }],
+          contents: [
+            {
+              parts: [{ text: prompt }]
+            },
+          ],
         }),
       );
 
       return data.candidates[0].content.parts[0].text;
     } catch (error) {
-      throw new ServerUnavailableError('Failed  ' + error);
+      throw new ServerUnavailableError(
+        'Failed to generate AI response: AI generation service is currently unavailable  ' +
+          error,
+      );
     }
   }
 }
