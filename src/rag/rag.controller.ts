@@ -9,6 +9,7 @@ import {
   Body,
   Controller,
   Delete,
+  Get,
   HttpCode,
   HttpStatus,
   Param,
@@ -22,6 +23,7 @@ import { RagSearchRequestDto } from './dto/search-request-dto';
 import { RagSearchResponseDto } from './dto/search-response-dto';
 import { RagChatRequestDto } from './dto/chat-request-dto';
 import { RagChatResponseDto } from './dto/chat-response-dto';
+import { RagChatHistoryResponseDto } from './dto/history-response-dto';
 
 @ApiTags('ai')
 @Controller('ai')
@@ -120,5 +122,31 @@ export class RagController {
   })
   async chat(@Body() dto: RagChatRequestDto): Promise<RagChatResponseDto> {
     return this.ragService.chat(dto);
+  }
+
+  @Get('rag/chat/:conversationId/history')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Retrieve conversation history',
+    description:
+      'Fetches all past messages and AI responses for a specific conversation session.',
+  })
+  @ApiParam({
+    name: 'conversationId',
+    description: 'The unique identifier of the chat session',
+    example: 'chat-uuid-123',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Conversation history successfully retrieved',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'No history found for the provided conversation ID',
+  })
+  async getHistory(
+    @Param('conversationId') conversationId: string,
+  ): Promise<RagChatHistoryResponseDto> {
+    return this.ragService.getHistory(conversationId);
   }
 }

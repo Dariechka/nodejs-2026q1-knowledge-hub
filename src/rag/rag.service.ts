@@ -17,6 +17,11 @@ import { RagSearchResponseDto } from './dto/search-response-dto';
 import { Article } from '../article/entities/article.entity';
 import { RagChatRequestDto } from './dto/chat-request-dto';
 import { RagChatResponseDto } from './dto/chat-response-dto';
+import { PrismaService } from '../prisma/prisma.service';
+import {
+  RagChatHistoryResponseDto,
+} from './dto/history-response-dto';
+import { MessageType } from '@prisma/client';
 
 type PointStruct = Schemas['PointStruct'];
 
@@ -28,11 +33,14 @@ export class RagService implements OnModuleInit {
     Number(process.env.RAG_CHUNK_SIZE) ?? 800;
   private readonly chunkOverlap: number =
     Number(process.env.RAG_CHUNK_OVERLAP) ?? 200;
+  private readonly limit: number =
+    Number(process.env.RAG_CONVERSATION_MAX_MESSAGES) ?? 10;
 
   constructor(
     @Inject('QDRANT_CLIENT') private readonly qdrant: QdrantClient,
     private readonly articleService: ArticleService,
     private readonly gemini: GeminiRagService,
+    private readonly prismaService: PrismaService,
   ) {}
 
   async onModuleInit() {
@@ -239,7 +247,39 @@ export class RagService implements OnModuleInit {
   }
 
   async chat(dto: RagChatRequestDto): Promise<RagChatResponseDto> {
+    const conversationId = dto.conversationId ?? crypto.randomUUID();
     try {
+      await this.prismaService.conversation.upsert({
+        where: {
+          id: conversationId,
+        },
+
+        update: {},
+
+        create: {
+          id: conversationId,
+        },
+      });
+
+      const history = await this.prismaService.message.findMany({
+        where: {
+          conversationId,
+        },
+
+        orderBy: {
+          createdAt: 'desc',
+        },
+
+        take: this.limit,
+      });
+      const orderedHistory = history.reverse();
+      const historyText = orderedHistory
+        .map(
+          (message) =>
+            `${message.contentType.toUpperCase()}: ${message.content}`,
+        )
+        .join('\n');
+
       const vector = await this.gemini.fetchEmbeddings(dto.question);
       const searchResults = await this.qdrant.search(this.collectionName, {
         vector,
@@ -255,7 +295,7 @@ export class RagService implements OnModuleInit {
         return {
           answer: "I couldn't find relevant information in the knowledge base.",
           sources: [],
-          conversationId: dto.conversationId ?? crypto.randomUUID(),
+          conversationId,
         };
       }
 
@@ -271,12 +311,15 @@ export class RagService implements OnModuleInit {
       const ragPrompt = `
     Answering questions using ONLY the provided context.
 
-Rules:
-- Use only the supplied context.
-- Do not invent information.
-- If the answer is not present in the context, say:
-  "I could not find this information in the knowledge base."
-- Be concise and factual.
+    Rules:
+    - Use only the supplied context.
+    - Do not invent information.
+    - If the answer is not present in the context, say:
+      "I could not find this information in the knowledge base."
+    - Be concise and factual.
+    
+    Conversation History:
+    ${historyText}
     
     Context:
     ${contextText}
@@ -285,15 +328,79 @@ Rules:
   `;
 
       const answer = await this.gemini.generateAnswer(ragPrompt);
+      await this.prismaService.$transaction([
+        this.prismaService.message.createMany({
+          data: [
+            {
+              conversationId,
+              contentType: MessageType.question,
+              content: dto.question,
+            },
+
+            {
+              conversationId,
+              contentType: MessageType.answer,
+              content: answer,
+            },
+          ],
+        }),
+
+        this.prismaService.conversation.update({
+          where: {
+            id: conversationId,
+          },
+
+          data: {
+            updatedAt: new Date(),
+          },
+        }),
+      ]);
       return {
         answer,
         sources,
-        conversationId: dto.conversationId ?? crypto.randomUUID(),
+        conversationId,
       };
     } catch {
       throw new ServerUnavailableError(
         'Failed to perform RAG conversation due to vector database services',
       );
     }
+  }
+
+  async getHistory(conversationId: string): Promise<RagChatHistoryResponseDto> {
+    const conversation = await this.prismaService.conversation.findUnique({
+      where: {
+        id: conversationId,
+      },
+    });
+
+    if (!conversation) {
+      throw new NotFoundError(
+        `Conversation with ID ${conversationId} was not found`,
+      );
+    }
+
+    const messages = await this.prismaService.message.findMany({
+      where: {
+        conversationId,
+      },
+
+      orderBy: {
+        createdAt: 'desc',
+      },
+
+      take: this.limit,
+    });
+
+    return {
+      conversationId,
+
+      messages: messages.reverse().map((message) => ({
+        id: message.id,
+        messageType: message.contentType,
+        content: message.content,
+        createdAt: Number(message.createdAt),
+      })),
+    };
   }
 }

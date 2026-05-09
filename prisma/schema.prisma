@@ -18,6 +18,11 @@ enum ArticleStatus {
   archived
 }
 
+enum MessageType {
+  question
+  answer
+}
+
 model User {
   id        String   @id @default(uuid()) @db.Uuid
   login     String   @unique
@@ -78,6 +83,26 @@ model Tag {
   articles Article[]
 
   @@index([name])
+}
+
+model Conversation {
+  id        String    @id @default(uuid())
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  messages  Message[]
+}
+
+model Message {
+  id             String   @id @default(uuid())
+  conversationId String
+  contentType    MessageType
+  content        String
+  createdAt      DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
 }
 
 
