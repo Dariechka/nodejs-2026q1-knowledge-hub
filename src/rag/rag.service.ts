@@ -18,9 +18,7 @@ import { Article } from '../article/entities/article.entity';
 import { RagChatRequestDto } from './dto/chat-request-dto';
 import { RagChatResponseDto } from './dto/chat-response-dto';
 import { PrismaService } from '../prisma/prisma.service';
-import {
-  RagChatHistoryResponseDto,
-} from './dto/history-response-dto';
+import { RagChatHistoryResponseDto } from './dto/history-response-dto';
 import { MessageType } from '@prisma/client';
 
 type PointStruct = Schemas['PointStruct'];
@@ -299,12 +297,17 @@ export class RagService implements OnModuleInit {
         };
       }
 
-      const sources = searchResults.map((point) => ({
-        articleId: String(point.payload?.articleId ?? ''),
-        articleTitle: String(point.payload?.title ?? ''),
-        relevantChunk: String(point.payload?.content ?? ''),
-      }));
-      const contextText = sources
+      // const sources = searchResults.map((point) => ({
+      //   articleId: String(point.payload?.articleId ?? ''),
+      //   articleTitle: String(point.payload?.title ?? ''),
+      //   relevantChunk: String(point.payload?.content ?? ''),
+      // }));
+
+      const rerankedSources = await this.rerankResults(
+        dto.question,
+        filteredResults,
+      );
+      const contextText = rerankedSources
         .map((s) => `Source: ${s.articleTitle}\nContent: ${s.relevantChunk}`)
         .join('\n');
 
@@ -357,7 +360,7 @@ export class RagService implements OnModuleInit {
       ]);
       return {
         answer,
-        sources,
+        sources: rerankedSources,
         conversationId,
       };
     } catch {
@@ -402,5 +405,96 @@ export class RagService implements OnModuleInit {
         createdAt: Number(message.createdAt),
       })),
     };
+  }
+
+  private async rerankResults(
+    question: string,
+    results: Array<{
+      payload?: {
+        articleId?: string;
+        title?: string;
+        content?: string;
+      };
+      score?: number;
+    }>,
+  ): Promise<
+    Array<{
+      articleId: string;
+      articleTitle: string;
+      relevantChunk: string;
+    }>
+  > {
+    if (results.length === 0) {
+      return [];
+    }
+    const candidates = results
+      .map(
+        (result, index) => `
+    [ID ${index}]
+    Title: ${String(result.payload?.title ?? '')}
+
+    Content:
+    ${String(result.payload?.content ?? '')}
+    `,
+      )
+      .join('\n');
+
+    const rerankPrompt = `
+    Select the 3 most relevant document chunks for answering the user's question.
+
+    Rules:
+    - Return ONLY numeric IDs.
+    - No explanations.
+    - No additional text.
+    - Format strictly:
+    0,1,2
+
+    User Question:
+    ${question}
+
+    Document Chunks:
+    ${candidates}
+    `;
+
+    let response: string;
+
+    try {
+      response = await this.gemini.generateAnswer(rerankPrompt);
+    } catch (error) {
+      console.error('Failed to rerank results:', error);
+
+      return results.slice(0, 3).map((result) => ({
+        articleId: String(result.payload?.articleId ?? ''),
+
+        articleTitle: String(result.payload?.title ?? ''),
+
+        relevantChunk: String(result.payload?.content ?? ''),
+      }));
+    }
+
+    const parsedIds = response
+      .split(',')
+      .map((id) => Number(id.trim()))
+      .filter((id) => !Number.isNaN(id) && id >= 0 && id < results.length);
+
+    const uniqueIds = [...new Set(parsedIds)];
+
+    if (uniqueIds.length === 0) {
+      return results.slice(0, 3).map((result) => ({
+        articleId: String(result.payload?.articleId ?? ''),
+
+        articleTitle: String(result.payload?.title ?? ''),
+
+        relevantChunk: String(result.payload?.content ?? ''),
+      }));
+    }
+
+    return uniqueIds.slice(0, 3).map((id) => ({
+      articleId: String(results[id].payload?.articleId ?? ''),
+
+      articleTitle: String(results[id].payload?.title ?? ''),
+
+      relevantChunk: String(results[id].payload?.content ?? ''),
+    }));
   }
 }
