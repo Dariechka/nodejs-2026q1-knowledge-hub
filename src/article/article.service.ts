@@ -53,22 +53,30 @@ export class ArticleService {
     pagination: Pagination,
     sorting: Sorting,
   ) {
-    return this.prismaService.article.findMany({
+    const articles = await this.prismaService.article.findMany({
+      include: {
+        tags: true,
+      },
       where: {
-        OR: [
-          { status: filter.status },
-          { categoryId: filter.categoryId },
-          { authorId: filter.authorId },
-          {
-            tags: {
-              some: { name: filter.tag },
-            },
+        ...(filter.id && { id: filter.id }),
+        ...(filter.status && { status: filter.status }),
+        ...(filter.categoryId && { categoryId: filter.categoryId }),
+        ...(filter.authorId && { authorId: filter.authorId }),
+        ...(filter.tag && {
+          tags: {
+            some: { name: filter.tag },
           },
-        ],
+        }),
       },
       ...toPrismaPagination(pagination),
       ...toPrismaSorting(sorting),
     });
+    return articles.map((article) => ({
+      ...article,
+      createdAt: Number(article.createdAt),
+      updatedAt: Number(article.updatedAt),
+      tags: article.tags.map((t) => t.name),
+    }));
   }
 
   async findOne(id: string) {

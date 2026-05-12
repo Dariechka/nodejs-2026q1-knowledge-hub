@@ -10,9 +10,14 @@ import { AuthModule } from './auth/auth.module';
 import { configureLoggingModule } from './shared/logging';
 import { AiModule } from './ai/ai.module';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { HealthCheckModule } from './healthcheck/heathcheck.module';
+import { RagModule } from './rag/rag.module';
+import { QdrantModule } from './qdrant/qdrant.module';
 
 @Module({
   imports: [
+    QdrantModule,
+    HealthCheckModule,
     UsersModule,
     ArticleModule,
     CategoryModule,
@@ -21,6 +26,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
     PrismaModule,
     AuthModule,
     AiModule,
+    RagModule,
     configureLoggingModule(),
     ConfigModule.forRoot({
       isGlobal: true,
